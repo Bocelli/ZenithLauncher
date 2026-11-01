@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ll_options_root"
+    android:layout_width="380dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/pill_bg_normal"
+    android:paddingStart="28dp"
+    android:paddingEnd="28dp"
+    android:paddingTop="24dp"
+    android:paddingBottom="24dp"
+    android:gravity="center_horizontal">
+
+    <TextView
+        android:id="@+id/tv_options_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_primary"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:singleLine="true" />
+
+    <TextView
+        android:id="@+id/tv_options_subtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="20dp"
+        android:textColor="@color/accent"
+        android:textSize="12sp"
+        android:text="Gestione Applicazione" />
+
+    <!-- Button 1: Toggle Favorite -->
+    <TextView
+        android:id="@+id/btn_opt_favorite"
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:background="@drawable/pill_background"
+        android:focusable="true"
+        android:clickable="true"
+        android:gravity="center"
+        android:text="⭐ Aggiungi a Home"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <!-- Button 2: Toggle PIN Lock -->
+    <TextView
+        android:id="@+id/btn_opt_lock"
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/pill_background"
+        android:focusable="true"
+        android:clickable="true"
+        android:gravity="center"
+        android:text="🔒 Blocca con PIN"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <!-- Button 3: Change PIN -->
+    <TextView
+        android:id="@+id/btn_opt_change_pin"
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/pill_background"
+        android:focusable="true"
+        android:clickable="true"
+        android:gravity="center"
+        android:text="🔑 Modifica PIN Master"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <!-- Button 4: Cancel -->
+    <TextView
+        android:id="@+id/btn_opt_cancel"
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/pill_background"
+        android:focusable="true"
+        android:clickable="true"
+        android:gravity="center"
+        android:text="Chiudi"
+        android:textColor="#B0A0D0"
+        android:textSize="13sp" />
+
+</LinearLayout>

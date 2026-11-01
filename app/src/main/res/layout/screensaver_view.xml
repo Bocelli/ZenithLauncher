@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <ImageView
+        android:id="@+id/iv_screensaver_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/wallpaper_default" />
+
+    <!-- Ambient Dark Scrim -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#99000000" />
+
+    <!-- Drifting Ambient Container for Burn-In Prevention -->
+    <LinearLayout
+        android:id="@+id/screensaver_content"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
+
+        <TextClock
+            android:id="@+id/sc_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:textSize="80sp"
+            android:textStyle="bold"
+            android:format12Hour="HH:mm"
+            android:format24Hour="HH:mm" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/pill_hero_info"
+            android:paddingStart="22dp"
+            android:paddingEnd="22dp"
+            android:paddingTop="7dp"
+            android:paddingBottom="7dp">
+
+            <TextClock
+                android:id="@+id/sc_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#E9D5FF"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:format12Hour="EEEE d MMMM"
+                android:format24Hour="EEEE d MMMM" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="  •  "
+                android:textColor="#80FFFFFF"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/sc_weather"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/accent"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:text="Salemi" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="32dp"
+        android:text="Premi un tasto qualsiasi per riattivare"
+        android:textColor="#80E9D5FF"
+        android:textSize="12sp" />
+
+</FrameLayout>

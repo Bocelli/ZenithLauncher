@@ -1,0 +1,17 @@
+# Build output
+build/
+*.idsig
+*.class
+*.dex
+
+# IDE
+.idea/
+.gradle/
+*.iml
+.vscode/
+
+# Logs & temp
+*.log
+*.tmp
+.DS_Store
+Thumbs.db

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_dark">#0A0612</color>
+    <color name="glass_card">#28FFFFFF</color>
+    <color name="glass_card_focused">#855B21B6</color>
+    <color name="card_stroke_normal">#20FFFFFF</color>
+    <color name="card_stroke_focused">#E040FB</color>
+    <color name="text_primary">#FFFFFFFF</color>
+    <color name="text_secondary">#CCE2D9F3</color>
+    <color name="accent">#D8B4FE</color>
+</resources>

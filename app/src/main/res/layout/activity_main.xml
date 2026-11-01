@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <!-- Background Wallpaper -->
+    <ImageView
+        android:id="@+id/iv_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/wallpaper_default" />
+
+    <!-- Subtle Scrim -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#20000000" />
+
+    <!-- Top-Right Actions (Wi-Fi, Settings) -->
+    <LinearLayout
+        android:id="@+id/top_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:orientation="horizontal"
+        android:paddingTop="20dp"
+        android:paddingEnd="32dp"
+        android:gravity="center_vertical"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+
+        <ImageButton
+            android:id="@+id/btn_wifi"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="@drawable/top_button_selector"
+            android:src="@drawable/ic_wifi"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:contentDescription="@string/wifi"
+            android:focusable="true"
+            android:clickable="true" />
+
+        <ImageButton
+            android:id="@+id/btn_settings"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:layout_marginStart="14dp"
+            android:background="@drawable/top_button_selector"
+            android:src="@drawable/ic_settings"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:contentDescription="@string/settings"
+            android:focusable="true"
+            android:clickable="true" />
+
+    </LinearLayout>
+
+    <!-- Center Hero Widget (Unified Apple TV Frosted Capsule Design) -->
+    <LinearLayout
+        android:id="@+id/hero_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal|top"
+        android:layout_marginTop="26dp"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
+
+        <TextClock
+            android:id="@+id/tc_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_primary"
+            android:textSize="54sp"
+            android:textStyle="bold"
+            android:format12Hour="HH:mm"
+            android:format24Hour="HH:mm" />
+
+        <!-- Cohesive Status Pill (Date + Weather) -->
+        <LinearLayout
+            android:id="@+id/ll_hero_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/pill_hero_info"
+            android:paddingStart="18dp"
+            android:paddingEnd="18dp"
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp">
+
+            <TextClock
+                android:id="@+id/tc_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#E9D5FF"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:format12Hour="EEEE d MMMM"
+                android:format24Hour="EEEE d MMMM" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="  •  "
+                android:textColor="#80FFFFFF"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/tv_weather"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/accent"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:text="@string/loading_weather" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Apple TV Pill Dock (Zero Fading Edge Rectangles, Left Edge Aligned) -->
+    <LinearLayout
+        android:id="@+id/dock_wrapper"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="24dp"
+        android:orientation="vertical"
+        android:background="@null"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+
+        <HorizontalScrollView
+            android:id="@+id/hsv_dock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:fadingEdge="none"
+            android:requiresFadingEdge="none"
+            android:overScrollMode="never"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp">
+
+            <LinearLayout
+                android:id="@+id/dock_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:clipChildren="false"
+                android:clipToPadding="false" />
+
+        </HorizontalScrollView>
+
+    </LinearLayout>
+
+    <!-- Fullscreen All Apps Drawer (Deep Velvet Opaque Background, Zero Ghosting) -->
+    <FrameLayout
+        android:id="@+id/fl_drawer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#FA090716"
+        android:visibility="gone"
+        android:paddingStart="48dp"
+        android:paddingEnd="48dp"
+        android:paddingTop="32dp"
+        android:paddingBottom="32dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/all_apps"
+                android:textColor="@color/text_primary"
+                android:textSize="26sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="24dp"
+                android:text="Premi OK per aprire  •  Premi Menu (☰) o tieni premuto OK per aggiungere/rimuovere da Home"
+                android:textColor="@color/accent"
+                android:textSize="13sp" />
+
+            <GridView
+                android:id="@+id/gv_all_apps"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:numColumns="3"
+                android:verticalSpacing="14dp"
+                android:horizontalSpacing="16dp"
+                android:stretchMode="columnWidth"
+                android:gravity="center"
+                android:listSelector="@android:color/transparent"
+                android:drawSelectorOnTop="false"
+                android:scrollbars="none"
+                android:clipChildren="false"
+                android:clipToPadding="false" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <!-- Fullscreen Options Modal Overlay -->
+    <FrameLayout
+        android:id="@+id/fl_options_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#CC000000"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true">
+
+        <include
+            android:id="@+id/include_options"
+            layout="@layout/dialog_app_options"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+
+    </FrameLayout>
+
+    <!-- Fullscreen PIN Modal Overlay -->
+    <FrameLayout
+        android:id="@+id/fl_pin_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#CC000000"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true">
+
+        <include
+            android:id="@+id/include_pin"
+            layout="@layout/dialog_pin_entry"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+
+    </FrameLayout>
+
+</FrameLayout>

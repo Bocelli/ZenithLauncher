@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Zenith Launcher</string>
+    <string name="all_apps">Tutte le App</string>
+    <string name="store">Store</string>
+    <string name="settings">Impostazioni</string>
+    <string name="notifications">Notifiche</string>
+    <string name="wifi">Rete Wi-Fi</string>
+    <string name="loading_weather">Meteo in caricamento…</string>
+    <string name="service_name">Zenith Home Service</string>
+    <string name="service_description">Intercetta il tasto Home per avviare Zenith Launcher.</string>
+</resources>
