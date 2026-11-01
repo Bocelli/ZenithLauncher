@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ll_settings_root"
+    android:layout_width="400dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/pill_bg_normal"
+    android:paddingStart="28dp"
+    android:paddingEnd="28dp"
+    android:paddingTop="24dp"
+    android:paddingBottom="24dp"
+    android:gravity="center_horizontal">
+
+    <TextView
+        android:id="@+id/tv_settings_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_primary"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:text="⚙️ Impostazioni Zenith" />
+
+    <TextView
+        android:id="@+id/tv_settings_subtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="20dp"
+        android:textColor="@color/accent"
+        android:textSize="12sp"
+        android:text="Personalizzazione &amp; Salvaschermo" />
+
+    <!-- Button 1: Screensaver Timeout Cycle -->
+    <TextView
+        android:id="@+id/btn_set_screensaver_timeout"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:background="@drawable/pill_background"
+        android:focusable="true"
+        android:clickable="true"
+        android:gravity="center"
+        android:text="🌙 Salvaschermo: 3 minuti"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <!-- Button 2: Test Screensaver Now -->
+    <TextView
+        android:id="@+id/btn_set_screensaver_test"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/pill_background"
+        android:focusable="true"
+        android:clickable="true"
+        android:gravity="center"
+        android:text="▶️ Prova Salvaschermo adesso"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <!-- Button 3: Change PIN -->
+    <TextView
+        android:id="@+id/btn_set_change_pin"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/pill_background"
+        android:focusable="true"
+        android:clickable="true"
+        android:gravity="center"
+        android:text="🔑 Modifica PIN Master"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <!-- Button 4: Fire TV Settings -->
+    <TextView
+        android:id="@+id/btn_set_firetv"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/pill_background"
+        android:focusable="true"
+        android:clickable="true"
+        android:gravity="center"
+        android:text="📺 Impostazioni Fire TV"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <!-- Button 5: Close -->
+    <TextView
+        android:id="@+id/btn_set_close"
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/pill_background"
+        android:focusable="true"
+        android:clickable="true"
+        android:gravity="center"
+        android:text="Chiudi"
+        android:textColor="#B0A0D0"
+        android:textSize="13sp" />
+
+</LinearLayout>

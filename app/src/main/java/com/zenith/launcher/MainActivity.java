@@ -62,6 +62,14 @@ public class MainActivity extends Activity {
     private TextView tvPinDots;
     private TextView tvPinError;
 
+    // Settings Overlay
+    private FrameLayout flSettingsOverlay;
+    private TextView btnSetScreensaverTimeout;
+    private TextView btnSetScreensaverTest;
+    private TextView btnSetChangePin;
+    private TextView btnSetFireTv;
+    private TextView btnSetClose;
+
     private final List<AppInfo> allAppsList = new ArrayList<>();
     private GridAdapter gridAdapter;
     private SharedPreferences prefs;
@@ -72,11 +80,18 @@ public class MainActivity extends Activity {
     private static final String PREF_MASTER_PIN = "master_pin";
     private static final String DEFAULT_PIN = "0000";
 
+    // Screensaver timeout configuration
+    private static final String PREF_SCREENSAVER_TIMEOUT_SEC = "screensaver_timeout_sec";
+    private static final int DEFAULT_TIMEOUT_SEC = 180;
+    private static final int[] TIMEOUT_OPTIONS = {60, 180, 300, 600, 0};
+    private static final String[] TIMEOUT_LABELS = {"1 minuto", "3 minuti", "5 minuti", "10 minuti", "Disattivato (Mai)"};
+
     private static final String[] DEFAULT_PRIORITY_PKGS = {
             "com.streamflixreborn.streamflix",
             "com.amazon.firetv.youtube",
             "com.aurora.store",
             "com.netflix.ninja",
+            "com.amazon.firebat",
             "com.amazon.amazonvideo.livingroom"
     };
 
@@ -93,8 +108,6 @@ public class MainActivity extends Activity {
     private AppInfo pendingLaunchApp = null;
     private AppInfo selectedOptionApp = null;
 
-    // Inactivity Screensaver Timer (3 minutes)
-    private static final long IDLE_TIMEOUT_MS = 180000;
     private final Handler idleHandler = new Handler(Looper.getMainLooper());
     private final Runnable idleRunnable = new Runnable() {
         @Override
@@ -142,6 +155,7 @@ public class MainActivity extends Activity {
         overridePendingTransition(0, 0);
         hidePinPrompt();
         hideAppOptions();
+        hideZenithSettings();
         if (flDrawer != null && flDrawer.getVisibility() == View.VISIBLE) {
             closeDrawer();
         }
@@ -150,11 +164,27 @@ public class MainActivity extends Activity {
 
     private void resetIdleTimer() {
         idleHandler.removeCallbacks(idleRunnable);
-        idleHandler.postDelayed(idleRunnable, IDLE_TIMEOUT_MS);
+        int timeoutSec = getScreensaverTimeoutSec();
+        if (timeoutSec > 0) {
+            idleHandler.postDelayed(idleRunnable, timeoutSec * 1000L);
+        }
     }
 
     private void startScreensaver() {
         if (isFinishing()) return;
+        int timeoutSec = getScreensaverTimeoutSec();
+        if (timeoutSec <= 0) return; // Disabled
+
+        // Check if any media playback is active across the system (Prime Video, Netflix, YouTube, Spotify, etc.)
+        if (MediaUtils.isMediaPlaying(this)) {
+            resetIdleTimer();
+            return;
+        }
+
+        startScreensaverActivity();
+    }
+
+    private void startScreensaverActivity() {
         try {
             Intent intent = new Intent(this, ScreensaverActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -257,6 +287,52 @@ public class MainActivity extends Activity {
         tvPinError = findViewById(R.id.tv_pin_error);
 
         setupNumpad();
+
+        // Settings Overlay
+        flSettingsOverlay = findViewById(R.id.fl_settings_overlay);
+        btnSetScreensaverTimeout = findViewById(R.id.btn_set_screensaver_timeout);
+        btnSetScreensaverTest = findViewById(R.id.btn_set_screensaver_test);
+        btnSetChangePin = findViewById(R.id.btn_set_change_pin);
+        btnSetFireTv = findViewById(R.id.btn_set_firetv);
+        btnSetClose = findViewById(R.id.btn_set_close);
+
+        btnSetScreensaverTimeout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                cycleScreensaverTimeout();
+            }
+        });
+
+        btnSetScreensaverTest.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideZenithSettings();
+                startScreensaverActivity();
+            }
+        });
+
+        btnSetChangePin.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideZenithSettings();
+                showPinPrompt(null, PinMode.VERIFY_FOR_CHANGE);
+            }
+        });
+
+        btnSetFireTv.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideZenithSettings();
+                openSettings();
+            }
+        });
+
+        btnSetClose.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideZenithSettings();
+            }
+        });
     }
 
     private void setupNumpad() {
@@ -334,6 +410,53 @@ public class MainActivity extends Activity {
                 dockContainer.getChildAt(0).requestFocus();
             }
         }
+    }
+
+    private void showZenithSettings() {
+        updateScreensaverTimeoutLabel();
+        flSettingsOverlay.setVisibility(View.VISIBLE);
+        btnSetScreensaverTimeout.requestFocus();
+    }
+
+    private void hideZenithSettings() {
+        if (flSettingsOverlay != null && flSettingsOverlay.getVisibility() == View.VISIBLE) {
+            flSettingsOverlay.setVisibility(View.GONE);
+            btnSettings.requestFocus();
+        }
+    }
+
+    private int getScreensaverTimeoutSec() {
+        return prefs.getInt(PREF_SCREENSAVER_TIMEOUT_SEC, DEFAULT_TIMEOUT_SEC);
+    }
+
+    private void updateScreensaverTimeoutLabel() {
+        int cur = getScreensaverTimeoutSec();
+        String label = "Disattivato (Mai)";
+        for (int i = 0; i < TIMEOUT_OPTIONS.length; i++) {
+            if (TIMEOUT_OPTIONS[i] == cur) {
+                label = TIMEOUT_LABELS[i];
+                break;
+            }
+        }
+        if (btnSetScreensaverTimeout != null) {
+            btnSetScreensaverTimeout.setText("🌙 Salvaschermo: " + label);
+        }
+    }
+
+    private void cycleScreensaverTimeout() {
+        int cur = getScreensaverTimeoutSec();
+        int nextIndex = 0;
+        for (int i = 0; i < TIMEOUT_OPTIONS.length; i++) {
+            if (TIMEOUT_OPTIONS[i] == cur) {
+                nextIndex = (i + 1) % TIMEOUT_OPTIONS.length;
+                break;
+            }
+        }
+        int nextTimeout = TIMEOUT_OPTIONS[nextIndex];
+        prefs.edit().putInt(PREF_SCREENSAVER_TIMEOUT_SEC, nextTimeout).apply();
+        updateScreensaverTimeoutLabel();
+        resetIdleTimer();
+        Toast.makeText(this, "Salvaschermo: " + TIMEOUT_LABELS[nextIndex], Toast.LENGTH_SHORT).show();
     }
 
     private void showPinPrompt(AppInfo targetApp, PinMode mode) {
@@ -559,7 +682,7 @@ public class MainActivity extends Activity {
         btnSettings.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                openSettings();
+                showZenithSettings();
             }
         });
 
@@ -828,6 +951,19 @@ public class MainActivity extends Activity {
             return;
         }
 
+        // Special explicit launch handling for Prime Video on Fire OS
+        if ("com.amazon.firebat".equals(app.getPackageName()) || "com.amazon.amazonvideo.livingroom".equals(app.getPackageName())) {
+            try {
+                Intent intent = new Intent(Intent.ACTION_MAIN);
+                intent.addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
+                intent.setComponent(new ComponentName("com.amazon.firebat", "com.amazon.firebatcore.deeplink.DeepLinkRoutingActivity"));
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                startActivity(intent);
+                overridePendingTransition(0, 0);
+                return;
+            } catch (Exception ignored) {}
+        }
+
         // 1. Try explicit component with LEANBACK launcher
         try {
             Intent intent = new Intent(Intent.ACTION_MAIN);
@@ -963,6 +1099,14 @@ public class MainActivity extends Activity {
             }
         }
 
+        // Handle Back key while Settings overlay is showing
+        if (flSettingsOverlay != null && flSettingsOverlay.getVisibility() == View.VISIBLE) {
+            if (event.getAction() == KeyEvent.ACTION_UP && event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
+                hideZenithSettings();
+                return true;
+            }
+        }
+
         return super.dispatchKeyEvent(event);
     }
 
@@ -973,6 +1117,10 @@ public class MainActivity extends Activity {
         }
 
         if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (flSettingsOverlay != null && flSettingsOverlay.getVisibility() == View.VISIBLE) {
+                hideZenithSettings();
+                return true;
+            }
             if (flDrawer.getVisibility() == View.VISIBLE) {
                 closeDrawer();
                 return true;

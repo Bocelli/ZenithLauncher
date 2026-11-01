@@ -20,9 +20,9 @@ Amazon's stock launcher consumes over **1.2 GB of RAM**, floods the screen with 
 |:---:|:---:|
 | ![Zenith Home 4K](docs/zenith_home_4k.png) | ![Ambient Screensaver](docs/ambient_screensaver.png) |
 
-| Per-App PIN Locker (Physical Remote Support) | App Management Modal |
+| Per-App PIN Locker (Physical Remote Support) | Zenith Settings Modal |
 |:---:|:---:|
-| ![PIN Lock Prompt](docs/pin_lock.png) | ![App Options](docs/app_options.png) |
+| ![PIN Lock Prompt](docs/pin_lock.png) | ![Zenith Settings](docs/zenith_settings.png) |
 
 ---
 
@@ -30,18 +30,19 @@ Amazon's stock launcher consumes over **1.2 GB of RAM**, floods the screen with 
 
 - ⚡ **Zero-Bloat Native Architecture**: Built with pure Android SDK 33 and compiled with `d8` (no Jetpack/AndroidX overhead). Total APK size is under **1.4 MB**, maintaining **60 FPS** at all times.
 - 📺 **Native 4K UHD Razor-Sharp Rendering**: Eliminates the infamous "SD Blur" of Fire OS 8 (caused by missing target SDK screen flags) with native 3840×2160 vector rendering and 32-bit `RGBA_8888` color depth.
-- 🍏 **Apple TV Frosted Glass Design**: Unified frosted glass pill capsules for the digital clock, geolocated live weather, horizontal dock, and app drawer.
+- 🍏 **Apple TV Frosted Glass Design**: Unified frosted glass pill capsules for the digital clock, geolocated live weather, horizontal dock, settings, and app drawer.
 - ⛅ **Automatic IP-Based Weather Geolocation**: Automatically detects city and coordinates via IP (using lightweight, zero-key APIs: `ipwho.is` / `open-meteo.com`) without hardcoding locations.
-- 🏠 **Reliable Fire OS 8 Home Interceptor**: Leverages a low-latency Accessibility Service (`HomeInterceptorService`) to hijack the remote Home button instantly without flashing the stock Amazon interface.
+- 🏠 **Reliable Fire OS 8 Home Interceptor**: Leverages a low-latency Accessibility Service (`HomeInterceptorService`) to hijack the remote Home button instantly without flashing the stock Amazon interface. Hardened to filter window state changes so streaming apps (Prime Video, Netflix) are never sent to the background.
 - 🔒 **Per-App PIN Lock & Remote Keypad Integration**:
   - Secure any app with a 4-digit PIN.
   - Full support for **physical remote number keys (0–9)** on `ACTION_DOWN` with anti-bounce protection.
   - Safe PIN removal requires master PIN confirmation. Emergency recovery PIN `0000` is always available.
   - Dynamic padlock `🔒` indicators update instantly across both the Home dock and the full App Drawer.
-- 🌙 **Ambient Drift Screensaver (`DreamService`)**:
-  - Replaces Amazon's ad-filled stock screensaver.
-  - Anti-burn-in drift logic (shifts clock and weather pill by ±40px every 45s) for OLED/QLED displays.
-  - Automatic 3-minute in-app idle timeout fallback.
+- 🌙 **Configurable Screensaver & Media Playback Guard**:
+  - **Customizable Inactivity Timeout**: Cycle between 1 min, 3 min, 5 min, 10 min, or Disabled (Never) via the on-screen Settings modal.
+  - **Zero Playback Interruption**: Screensaver strictly checks active audio/video sessions (`AudioManager.isMusicActive()` + `getActivePlaybackConfigurations()`). It will NEVER activate while streaming video (Prime Video, Netflix, YouTube, Streamflix) or playing music.
+  - **Anti-Burn-In Drift**: Gentle drift logic (shifts clock and weather pill by ±40px every 45s) protects OLED/QLED displays.
+- 🎬 **Seamless Prime Video & Streaming Compatibility**: Fully compatible with Fire OS 8's internal deep-link routing (`com.amazon.firebat`) and maintains essential system catalog providers (`com.amazon.vizzini`).
 - 🧹 **Safe Fire OS 8 Debloat Toolkit**: Disables telemetry, retail demo junk, background ad scraping, and shopping bloat while safely preserving Prime Video, Netflix, HDMI inputs, audio, and Bluetooth remote connectivity.
 
 ---

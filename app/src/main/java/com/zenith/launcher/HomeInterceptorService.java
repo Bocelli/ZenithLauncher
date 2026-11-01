@@ -10,34 +10,35 @@ public class HomeInterceptorService extends AccessibilityService {
     private static final String STOCK_LAUNCHER = "com.amazon.tv.launcher";
     private static final String FIRE_HOME_STARTER = "com.amazon.firehomestarter";
 
-    private String currentForegroundClass = "";
     private long lastLaunchTime = 0;
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         if (event == null) return;
 
+        // ONLY intercept explicit window state changes (not background content updates)
+        if (event.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            return;
+        }
+
         CharSequence pkg = event.getPackageName();
-        if (pkg == null) return;
+        CharSequence cls = event.getClassName();
+        if (pkg == null || cls == null) return;
+
         String pkgStr = pkg.toString();
+        String clsStr = cls.toString();
 
+        // Only redirect if the foreground window specifically belongs to Amazon's stock home screen
         if (STOCK_LAUNCHER.equals(pkgStr) || FIRE_HOME_STARTER.equals(pkgStr)) {
-            if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-                CharSequence cls = event.getClassName();
-                if (cls != null) {
-                    currentForegroundClass = cls.toString();
-                }
-            }
-
-            // If user is inside Settings, never intercept
-            if (currentForegroundClass.contains("Settings") || currentForegroundClass.contains("Preference") || currentForegroundClass.contains("Dialog")) {
+            // Never intercept if the user is inside Fire TV Settings, Preferences, or System Dialogs
+            if (clsStr.contains("Settings") || clsStr.contains("Preference") || clsStr.contains("Dialog")) {
                 return;
             }
 
-            // If stock Home screen is showing, redirect immediately to Zenith Launcher
-            if (currentForegroundClass.contains("HomeActivity") || currentForegroundClass.contains("HomeStarter")) {
+            // Only trigger if Amazon stock Home screen is actively in the foreground
+            if (clsStr.contains("HomeActivity") || clsStr.contains("HomeStarter")) {
                 long now = System.currentTimeMillis();
-                if (now - lastLaunchTime > 250) {
+                if (now - lastLaunchTime > 500) {
                     lastLaunchTime = now;
                     launchLauncher();
                 }

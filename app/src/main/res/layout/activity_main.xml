@@ -255,4 +255,23 @@
 
     </FrameLayout>
 
+    <!-- Fullscreen Settings Modal Overlay -->
+    <FrameLayout
+        android:id="@+id/fl_settings_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#CC000000"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true">
+
+        <include
+            android:id="@+id/include_settings"
+            layout="@layout/dialog_settings"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+
+    </FrameLayout>
+
 </FrameLayout>

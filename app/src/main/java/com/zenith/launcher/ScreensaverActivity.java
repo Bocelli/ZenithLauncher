@@ -19,6 +19,11 @@ public class ScreensaverActivity extends Activity {
     private final Runnable driftRunnable = new Runnable() {
         @Override
         public void run() {
+            if (MediaUtils.isMediaPlaying(ScreensaverActivity.this)) {
+                finish();
+                overridePendingTransition(0, 0);
+                return;
+            }
             if (contentContainer != null) {
                 float targetX = (random.nextFloat() * 80f) - 40f;
                 float targetY = (random.nextFloat() * 60f) - 30f;
@@ -35,6 +40,11 @@ public class ScreensaverActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (MediaUtils.isMediaPlaying(this)) {
+            finish();
+            overridePendingTransition(0, 0);
+            return;
+        }
         overridePendingTransition(0, 0);
         setContentView(R.layout.screensaver_view);
 
@@ -45,6 +55,15 @@ public class ScreensaverActivity extends Activity {
         }
 
         handler.postDelayed(driftRunnable, 30000);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (MediaUtils.isMediaPlaying(this)) {
+            finish();
+            overridePendingTransition(0, 0);
+        }
     }
 
     @Override

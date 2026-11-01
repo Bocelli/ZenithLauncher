@@ -20,9 +20,9 @@ Il launcher stock di Amazon occupa oltre **1.2 GB di memoria RAM**, riempie lo s
 |:---:|:---:|
 | ![Zenith Home 4K](docs/zenith_home_4k.png) | ![Ambient Screensaver](docs/ambient_screensaver.png) |
 
-| Blocco App con PIN (Tasti Telecomando Fisico) | Menu Gestione Applicazione |
+| Blocco App con PIN (Tasti Telecomando Fisico) | Finestra Impostazioni Zenith |
 |:---:|:---:|
-| ![PIN Lock Prompt](docs/pin_lock.png) | ![App Options](docs/app_options.png) |
+| ![PIN Lock Prompt](docs/pin_lock.png) | ![Zenith Settings](docs/zenith_settings.png) |
 
 ---
 
@@ -30,18 +30,19 @@ Il launcher stock di Amazon occupa oltre **1.2 GB di memoria RAM**, riempie lo s
 
 - ⚡ **Zero Bloat nativo**: Sviluppato in puro codice Android SDK 33 e dexato con `d8` (senza librerie pesanti Jetpack/AndroidX). L'intero APK pesa meno di **1.4 MB** ed è costantemente a **60 FPS**.
 - 📺 **Nitidezza Nativa 4K UHD**: Risolve il problema del "finto SD" di Fire OS 8 (dovuto al mancato target SDK nei vecchi launcher) con rendering vettoriale a 3840×2160 e profondità colore a 32-bit `RGBA_8888`.
-- 🍏 **Design Apple TV Glass Capsule**: Pillole in vetro satinato (frosted glass) con orologio digitale, data, meteo in tempo reale, dock orizzontale e drawer a schermo intero.
+- 🍏 **Design Apple TV Glass Capsule**: Pillole in vetro satinato (frosted glass) con orologio digitale, data, meteo in tempo reale, dock orizzontale, impostazioni e drawer a schermo intero.
 - ⛅ **Meteo con Geolocalizzazione Automatica IP**: Rileva automaticamente la posizione e il comune tramite IP (usando API gratuite e senza chiavi API come `ipwho.is` e `open-meteo.com`), senza forzare città fisse.
-- 🏠 **Intercettazione Tasto Home su Fire OS 8**: Utilizza un servizio di accessibilità istantaneo a bassissima latenza (`HomeInterceptorService`) che cattura il tasto Home del telecomando prima che appaia la schermata Amazon.
+- 🏠 **Intercettazione Tasto Home su Fire OS 8**: Utilizza un servizio di accessibilità istantaneo a bassissima latenza (`HomeInterceptorService`) che cattura il tasto Home del telecomando prima che appaia la schermata Amazon. Filtrato specificamente per non interferire con le app di streaming in esecuzione.
 - 🔒 **Protezione con PIN per singola App**:
   - Blocca qualsiasi applicazione con un PIN a 4 cifre.
   - Pieno supporto ai **tasti numerici fisici del telecomando (0–9)** all'evento `ACTION_DOWN` con antirimbalzo.
   - La rimozione del blocco richiede obbligatoriamente il PIN per sicurezza. Il PIN di emergenza `0000` è sempre attivo.
   - L'icona del lucchetto `🔒` si aggiorna all'istante sia sulla dock Home che nel drawer.
-- 🌙 **Salvaschermo Ambient Nativo (`DreamService`)**:
-  - Sostituisce il salvaschermo pubblicitario di Amazon.
-  - Logica di deriva anti-burn-in (spostamento orologio/meteo di ±40px ogni 45 secondi) ideale per pannelli OLED e QLED.
-  - Timer automatico di inattività in-app a 3 minuti.
+- 🌙 **Salvaschermo Configurabile & Protezione Riproduzione**:
+  - **Timer Regolabile**: Cicla tra 1 min, 3 min, 5 min, 10 min, o Disattivato (Mai) direttamente dal menu Impostazioni a schermo (icona ingranaggio in alto a destra).
+  - **Nessuna Interruzione durante la Visione**: Il salvaschermo controlla in tempo reale le sessioni audio/video attive nel sistema (`AudioManager.isMusicActive()` + `getActivePlaybackConfigurations()`). Non si attiverà MAI durante la riproduzione di film o serie (Prime Video, Netflix, YouTube, Streamflix) o musica.
+  - **Deriva Anti-Burn-In**: Spostamento delicato continuo (±40px ogni 45 secondi) ideale per proteggere pannelli OLED e QLED.
+- 🎬 **Piena Compatibilità con Prime Video**: Supporto al routing Leanback di Fire OS 8 (`com.amazon.firebat`) e salvaguardia dei provider di catalogo di sistema (`com.amazon.vizzini`).
 - 🧹 **Strumento Debloat Sicuro per Fire OS 8**: Disattiva telemetria, demo commerciali e annunci di shopping senza compromettere Prime Video, Netflix, ingressi HDMI, audio o telecomando Bluetooth.
 
 ---

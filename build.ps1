@@ -41,10 +41,12 @@ Write-Host "=== 3. Linking resources and generating R.java (aapt2 link) ===" -Fo
 Write-Host "=== 4. Compiling Java sources (javac) ===" -ForegroundColor Cyan
 $javaFiles = Get-ChildItem -Path $JAVA_DIR, $GEN_DIR -Filter "*.java" -Recurse | ForEach-Object { $_.FullName }
 & $JAVAC -encoding UTF-8 -source 1.8 -target 1.8 -cp $ANDROID_JAR -d $OBJ_DIR $javaFiles
+if ($LASTEXITCODE -ne 0) { throw "javac compilation failed" }
 
 Write-Host "=== 5. Dexing class files (d8) ===" -ForegroundColor Cyan
 $classFiles = Get-ChildItem -Path $OBJ_DIR -Filter "*.class" -Recurse | ForEach-Object { $_.FullName }
 & $JAVA -cp $D8_JAR com.android.tools.r8.D8 --lib $ANDROID_JAR --output $DEX_DIR $classFiles
+if ($LASTEXITCODE -ne 0) { throw "d8 compilation failed" }
 
 Write-Host "=== 6. Packaging classes.dex into APK ===" -ForegroundColor Cyan
 Push-Location $DEX_DIR

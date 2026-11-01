@@ -17,6 +17,10 @@ public class ZenithScreensaverService extends DreamService {
     private final Runnable driftRunnable = new Runnable() {
         @Override
         public void run() {
+            if (MediaUtils.isMediaPlaying(ZenithScreensaverService.this)) {
+                finish();
+                return;
+            }
             if (contentContainer != null) {
                 // Gentle anti burn-in drift (within ±40dp)
                 float targetX = (random.nextFloat() * 80f) - 40f;
@@ -34,6 +38,13 @@ public class ZenithScreensaverService extends DreamService {
     @Override
     public void onAttachedToWindow() {
         super.onAttachedToWindow();
+
+        // Check if media is currently playing (Prime Video, Netflix, YouTube, Spotify, etc.)
+        if (MediaUtils.isMediaPlaying(this)) {
+            finish();
+            return;
+        }
+
         setInteractive(false);
         setFullscreen(true);
         setContentView(R.layout.screensaver_view);
