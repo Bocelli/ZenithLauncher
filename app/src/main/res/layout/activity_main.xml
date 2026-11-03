@@ -22,6 +22,7 @@
 
     <!-- Main Vertical Layout: Top Bar + Content Area -->
     <LinearLayout
+        android:id="@+id/ll_main_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
@@ -361,7 +362,8 @@
         android:background="#CC000000"
         android:visibility="gone"
         android:clickable="true"
-        android:focusable="true">
+        android:focusable="false"
+        android:defaultFocusHighlightEnabled="false">
 
         <include layout="@layout/dialog_pin_entry" />
 
@@ -375,7 +377,8 @@
         android:background="#B3000000"
         android:visibility="gone"
         android:clickable="true"
-        android:focusable="true">
+        android:focusable="false"
+        android:defaultFocusHighlightEnabled="false">
 
         <include layout="@layout/dialog_app_options" />
 
@@ -389,7 +392,8 @@
         android:background="#B3000000"
         android:visibility="gone"
         android:clickable="true"
-        android:focusable="true">
+        android:focusable="false"
+        android:defaultFocusHighlightEnabled="false">
 
         <include layout="@layout/dialog_settings" />
 
@@ -403,7 +407,8 @@
         android:background="#B3000000"
         android:visibility="gone"
         android:clickable="true"
-        android:focusable="true">
+        android:focusable="false"
+        android:defaultFocusHighlightEnabled="false">
 
         <include layout="@layout/dialog_rename_input" />
 

@@ -19,8 +19,11 @@ import android.provider.Settings;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
@@ -49,6 +52,7 @@ import java.util.Set;
 public class MainActivity extends Activity {
 
     private ImageView ivBackground;
+    private LinearLayout llMainContainer;
     private LinearLayout llHomeContent;
     private TextClock tcTime;
     private ImageButton btnSettings;
@@ -96,12 +100,12 @@ public class MainActivity extends Activity {
     private TextView tvRenameTarget;
     private EditText etInputTitle;
     private EditText etInputSubtitle;
-    private Button btnIconHdmi;
-    private Button btnIconGamepad;
-    private Button btnIconPc;
-    private Button btnIconTv;
-    private Button btnSaveInput;
-    private Button btnCancelInput;
+    private TextView btnIconHdmi;
+    private TextView btnIconGamepad;
+    private TextView btnIconPc;
+    private TextView btnIconTv;
+    private TextView btnSaveInput;
+    private TextView btnCancelInput;
     private TvInputItem currentRenameItem = null;
     private String selectedRenameIcon = "hdmi";
 
@@ -229,8 +233,16 @@ public class MainActivity extends Activity {
         } catch (Exception ignored) {}
     }
 
+    private void setOverlayModal(boolean isModal) {
+        if (llMainContainer != null) {
+            llMainContainer.setDescendantFocusability(
+                    isModal ? ViewGroup.FOCUS_BLOCK_DESCENDANTS : ViewGroup.FOCUS_AFTER_DESCENDANTS);
+        }
+    }
+
     private void initViews() {
         ivBackground = findViewById(R.id.iv_background);
+        llMainContainer = findViewById(R.id.ll_main_container);
         llHomeContent = findViewById(R.id.ll_home_content);
 
         btnSettings = findViewById(R.id.btn_settings);
@@ -588,6 +600,32 @@ public class MainActivity extends Activity {
         setupRenameDialogListeners();
     }
 
+    private void showSoftKeyboard(final View view) {
+        if (view == null) return;
+        view.requestFocus();
+        view.post(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    if (imm != null) {
+                        imm.showSoftInput(view, InputMethodManager.SHOW_FORCED);
+                    }
+                } catch (Exception ignored) {}
+            }
+        });
+    }
+
+    private void hideSoftKeyboard(View view) {
+        if (view == null) return;
+        try {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+            }
+        } catch (Exception ignored) {}
+    }
+
     private void setupRenameDialogListeners() {
         if (btnIconHdmi != null) {
             btnIconHdmi.setOnClickListener(new View.OnClickListener() {
@@ -639,25 +677,148 @@ public class MainActivity extends Activity {
                 }
             });
         }
+
+        // Soft keyboard & editor actions
+        if (etInputTitle != null) {
+            etInputTitle.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    showSoftKeyboard(etInputTitle);
+                }
+            });
+            etInputTitle.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+                @Override
+                public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                    if (actionId == EditorInfo.IME_ACTION_NEXT || actionId == EditorInfo.IME_ACTION_DONE) {
+                        if (etInputSubtitle != null) {
+                            etInputSubtitle.requestFocus();
+                            showSoftKeyboard(etInputSubtitle);
+                        }
+                        return true;
+                    }
+                    return false;
+                }
+            });
+        }
+
+        if (etInputSubtitle != null) {
+            etInputSubtitle.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    showSoftKeyboard(etInputSubtitle);
+                }
+            });
+            etInputSubtitle.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+                @Override
+                public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                    if (actionId == EditorInfo.IME_ACTION_DONE) {
+                        hideSoftKeyboard(v);
+                        if (btnSaveInput != null) {
+                            btnSaveInput.requestFocus();
+                        }
+                        return true;
+                    }
+                    return false;
+                }
+            });
+        }
+
+        View.OnKeyListener editTextDpadListener = new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                    if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                        if (v == etInputTitle) {
+                            if (etInputSubtitle != null) etInputSubtitle.requestFocus();
+                            return true;
+                        } else if (v == etInputSubtitle) {
+                            if (btnIconGamepad != null && btnIconGamepad.isSelected()) {
+                                btnIconGamepad.requestFocus();
+                            } else if (btnIconPc != null && btnIconPc.isSelected()) {
+                                btnIconPc.requestFocus();
+                            } else if (btnIconTv != null && btnIconTv.isSelected()) {
+                                btnIconTv.requestFocus();
+                            } else if (btnIconHdmi != null) {
+                                btnIconHdmi.requestFocus();
+                            }
+                            return true;
+                        }
+                    } else if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                        if (v == etInputSubtitle) {
+                            if (etInputTitle != null) etInputTitle.requestFocus();
+                            return true;
+                        } else if (v == etInputTitle) {
+                            return true; // Keep bounded inside dialog
+                        }
+                    } else if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
+                        showSoftKeyboard(v);
+                        return false;
+                    }
+                }
+                return false;
+            }
+        };
+
+        if (etInputTitle != null) etInputTitle.setOnKeyListener(editTextDpadListener);
+        if (etInputSubtitle != null) etInputSubtitle.setOnKeyListener(editTextDpadListener);
+
+        // Strict focus containment inside dialog
+        if (etInputTitle != null) {
+            etInputTitle.setNextFocusUpId(R.id.et_input_title);
+            etInputTitle.setNextFocusDownId(R.id.et_input_subtitle);
+            etInputTitle.setNextFocusLeftId(R.id.et_input_title);
+            etInputTitle.setNextFocusRightId(R.id.et_input_title);
+        }
+        if (etInputSubtitle != null) {
+            etInputSubtitle.setNextFocusUpId(R.id.et_input_title);
+            etInputSubtitle.setNextFocusDownId(R.id.btn_icon_hdmi);
+            etInputSubtitle.setNextFocusLeftId(R.id.et_input_subtitle);
+            etInputSubtitle.setNextFocusRightId(R.id.et_input_subtitle);
+        }
+        if (btnIconHdmi != null) {
+            btnIconHdmi.setNextFocusUpId(R.id.et_input_subtitle);
+            btnIconHdmi.setNextFocusLeftId(R.id.btn_icon_hdmi);
+            btnIconHdmi.setNextFocusRightId(R.id.btn_icon_gamepad);
+            btnIconHdmi.setNextFocusDownId(R.id.btn_save_input);
+        }
+        if (btnIconGamepad != null) {
+            btnIconGamepad.setNextFocusUpId(R.id.et_input_subtitle);
+            btnIconGamepad.setNextFocusLeftId(R.id.btn_icon_hdmi);
+            btnIconGamepad.setNextFocusRightId(R.id.btn_icon_pc);
+            btnIconGamepad.setNextFocusDownId(R.id.btn_save_input);
+        }
+        if (btnIconPc != null) {
+            btnIconPc.setNextFocusUpId(R.id.et_input_subtitle);
+            btnIconPc.setNextFocusLeftId(R.id.btn_icon_gamepad);
+            btnIconPc.setNextFocusRightId(R.id.btn_icon_tv);
+            btnIconPc.setNextFocusDownId(R.id.btn_cancel_input);
+        }
+        if (btnIconTv != null) {
+            btnIconTv.setNextFocusUpId(R.id.et_input_subtitle);
+            btnIconTv.setNextFocusLeftId(R.id.btn_icon_pc);
+            btnIconTv.setNextFocusRightId(R.id.btn_icon_tv);
+            btnIconTv.setNextFocusDownId(R.id.btn_cancel_input);
+        }
+        if (btnSaveInput != null) {
+            btnSaveInput.setNextFocusUpId(R.id.btn_icon_hdmi);
+            btnSaveInput.setNextFocusLeftId(R.id.btn_save_input);
+            btnSaveInput.setNextFocusRightId(R.id.btn_cancel_input);
+            btnSaveInput.setNextFocusDownId(R.id.btn_save_input);
+        }
+        if (btnCancelInput != null) {
+            btnCancelInput.setNextFocusUpId(R.id.btn_icon_pc);
+            btnCancelInput.setNextFocusLeftId(R.id.btn_save_input);
+            btnCancelInput.setNextFocusRightId(R.id.btn_cancel_input);
+            btnCancelInput.setNextFocusDownId(R.id.btn_cancel_input);
+        }
     }
 
     private void selectRenameIcon(String iconType) {
         selectedRenameIcon = iconType;
-        updateRenameIconBtn(btnIconHdmi, "hdmi".equals(iconType));
-        updateRenameIconBtn(btnIconGamepad, "gamepad".equals(iconType));
-        updateRenameIconBtn(btnIconPc, "pc".equals(iconType));
-        updateRenameIconBtn(btnIconTv, "tv".equals(iconType));
-    }
-
-    private void updateRenameIconBtn(Button btn, boolean isSelected) {
-        if (btn == null) return;
-        if (isSelected) {
-            btn.setBackgroundResource(R.drawable.tab_active_bg);
-            btn.setTextColor(0xFF0E121E);
-        } else {
-            btn.setBackgroundResource(R.drawable.dialog_button_selector);
-            btn.setTextColor(0xFFFFFFFF);
-        }
+        if (btnIconHdmi != null) btnIconHdmi.setSelected("hdmi".equals(iconType));
+        if (btnIconGamepad != null) btnIconGamepad.setSelected("gamepad".equals(iconType));
+        if (btnIconPc != null) btnIconPc.setSelected("pc".equals(iconType));
+        if (btnIconTv != null) btnIconTv.setSelected("tv".equals(iconType));
     }
 
     private void showRenameInputDialog(TvInputItem item) {
@@ -674,19 +835,26 @@ public class MainActivity extends Activity {
         }
         if (etInputSubtitle != null) {
             etInputSubtitle.setText(item.subtitle);
+            etInputSubtitle.setSelection(item.subtitle.length());
         }
         selectRenameIcon(item.iconType);
 
         if (flRenameOverlay != null) {
+            setOverlayModal(true);
             flRenameOverlay.setVisibility(View.VISIBLE);
-            if (etInputTitle != null) etInputTitle.requestFocus();
+            if (etInputTitle != null) {
+                etInputTitle.requestFocus();
+            }
         }
     }
 
     private void hideRenameInputDialog() {
         if (flRenameOverlay != null && flRenameOverlay.getVisibility() == View.VISIBLE) {
+            hideSoftKeyboard(etInputTitle);
+            hideSoftKeyboard(etInputSubtitle);
             flRenameOverlay.setVisibility(View.GONE);
             currentRenameItem = null;
+            setOverlayModal(false);
             if (llInputsContainer != null && llInputsContainer.getChildCount() > 0) {
                 llInputsContainer.getChildAt(0).requestFocus();
             }
@@ -699,6 +867,8 @@ public class MainActivity extends Activity {
         String newSubtitle = etInputSubtitle.getText().toString().trim();
         if (newTitle.isEmpty()) newTitle = "HDMI " + currentRenameItem.id;
 
+        int targetIdx = currentRenameItem.id - 1;
+
         prefs.edit()
                 .putString("input_" + currentRenameItem.id + "_title", newTitle)
                 .putString("input_" + currentRenameItem.id + "_sub", newSubtitle)
@@ -707,6 +877,9 @@ public class MainActivity extends Activity {
 
         hideRenameInputDialog();
         buildInputs();
+        if (llInputsContainer != null && targetIdx >= 0 && targetIdx < llInputsContainer.getChildCount()) {
+            llInputsContainer.getChildAt(targetIdx).requestFocus();
+        }
         Toast.makeText(this, "Ingresso aggiornato!", Toast.LENGTH_SHORT).show();
     }
 
@@ -771,6 +944,7 @@ public class MainActivity extends Activity {
             btnOptLock.setText("🔒 Blocca con PIN");
         }
 
+        setOverlayModal(true);
         flOptionsOverlay.setVisibility(View.VISIBLE);
         btnOptFavorite.requestFocus();
     }
@@ -779,6 +953,7 @@ public class MainActivity extends Activity {
         if (flOptionsOverlay != null && flOptionsOverlay.getVisibility() == View.VISIBLE) {
             flOptionsOverlay.setVisibility(View.GONE);
             selectedOptionApp = null;
+            setOverlayModal(false);
             if (flDrawer.getVisibility() == View.VISIBLE) {
                 gvAllApps.requestFocus();
             } else if (llFavoritesContainer.getChildCount() > 0) {
@@ -789,6 +964,7 @@ public class MainActivity extends Activity {
 
     private void showZenithSettings() {
         updateScreensaverTimeoutLabel();
+        setOverlayModal(true);
         flSettingsOverlay.setVisibility(View.VISIBLE);
         btnSetScreensaverTimeout.requestFocus();
     }
@@ -796,6 +972,7 @@ public class MainActivity extends Activity {
     private void hideZenithSettings() {
         if (flSettingsOverlay != null && flSettingsOverlay.getVisibility() == View.VISIBLE) {
             flSettingsOverlay.setVisibility(View.GONE);
+            setOverlayModal(false);
             btnSettings.requestFocus();
         }
     }
@@ -860,6 +1037,7 @@ public class MainActivity extends Activity {
                 break;
         }
 
+        setOverlayModal(true);
         flPinOverlay.setVisibility(View.VISIBLE);
         View key5 = findViewById(R.id.btn_key_5);
         if (key5 != null) key5.requestFocus();
@@ -870,6 +1048,7 @@ public class MainActivity extends Activity {
             flPinOverlay.setVisibility(View.GONE);
             enteredPin = "";
             pendingLaunchApp = null;
+            setOverlayModal(false);
             if (flDrawer.getVisibility() == View.VISIBLE) {
                 gvAllApps.requestFocus();
             } else if (llFavoritesContainer.getChildCount() > 0) {
@@ -1496,41 +1675,110 @@ public class MainActivity extends Activity {
                     onDelPressed();
                     return true;
                 }
-                if (keyCode == KeyEvent.KEYCODE_BACK) {
-                    hidePinPrompt();
-                    return true;
-                }
-            } else if (event.getAction() == KeyEvent.ACTION_UP) {
-                if ((keyCode >= KeyEvent.KEYCODE_0 && keyCode <= KeyEvent.KEYCODE_9)
-                        || (keyCode >= KeyEvent.KEYCODE_NUMPAD_0 && keyCode <= KeyEvent.KEYCODE_NUMPAD_9)
-                        || keyCode == KeyEvent.KEYCODE_DEL
-                        || keyCode == KeyEvent.KEYCODE_BACK) {
-                    return true;
-                }
             }
         }
 
-        // Back key dispatch
-        if (event.getAction() == KeyEvent.ACTION_UP && event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
-            if (flRenameOverlay != null && flRenameOverlay.getVisibility() == View.VISIBLE) {
-                hideRenameInputDialog();
-                return true;
-            }
-            if (flOptionsOverlay != null && flOptionsOverlay.getVisibility() == View.VISIBLE) {
-                hideAppOptions();
-                return true;
-            }
-            if (flSettingsOverlay != null && flSettingsOverlay.getVisibility() == View.VISIBLE) {
-                hideZenithSettings();
-                return true;
-            }
-            if (flDrawer != null && flDrawer.getVisibility() == View.VISIBLE) {
-                showHomeDashboard();
-                return true;
+        // Rename dialog D-Pad control
+        if (flRenameOverlay != null && flRenameOverlay.getVisibility() == View.VISIBLE) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                int keyCode = event.getKeyCode();
+                if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                    if (etInputTitle != null && etInputTitle.hasFocus()) {
+                        if (etInputSubtitle != null) etInputSubtitle.requestFocus();
+                        return true;
+                    }
+                    if (etInputSubtitle != null && etInputSubtitle.hasFocus()) {
+                        focusSelectedRenameIcon();
+                        return true;
+                    }
+                    if (isAnyRenameIconFocused()) {
+                        if (btnSaveInput != null) btnSaveInput.requestFocus();
+                        return true;
+                    }
+                } else if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                    if (btnSaveInput != null && btnSaveInput.hasFocus()) {
+                        focusSelectedRenameIcon();
+                        return true;
+                    }
+                    if (btnCancelInput != null && btnCancelInput.hasFocus()) {
+                        focusSelectedRenameIcon();
+                        return true;
+                    }
+                    if (isAnyRenameIconFocused()) {
+                        if (etInputSubtitle != null) etInputSubtitle.requestFocus();
+                        return true;
+                    }
+                    if (etInputSubtitle != null && etInputSubtitle.hasFocus()) {
+                        if (etInputTitle != null) etInputTitle.requestFocus();
+                        return true;
+                    }
+                    if (etInputTitle != null && etInputTitle.hasFocus()) {
+                        return true; // Keep inside dialog
+                    }
+                } else if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+                    if (btnIconHdmi != null && btnIconHdmi.hasFocus()) return true;
+                    if (btnSaveInput != null && btnSaveInput.hasFocus()) return true;
+                } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+                    if (btnIconTv != null && btnIconTv.hasFocus()) return true;
+                    if (btnCancelInput != null && btnCancelInput.hasFocus()) return true;
+                } else if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
+                    if (etInputTitle != null && etInputTitle.hasFocus()) {
+                        showSoftKeyboard(etInputTitle);
+                        return true;
+                    }
+                    if (etInputSubtitle != null && etInputSubtitle.hasFocus()) {
+                        showSoftKeyboard(etInputSubtitle);
+                        return true;
+                    }
+                }
             }
         }
 
         return super.dispatchKeyEvent(event);
+    }
+
+    private boolean isAnyRenameIconFocused() {
+        return (btnIconHdmi != null && btnIconHdmi.hasFocus())
+                || (btnIconGamepad != null && btnIconGamepad.hasFocus())
+                || (btnIconPc != null && btnIconPc.hasFocus())
+                || (btnIconTv != null && btnIconTv.hasFocus());
+    }
+
+    private void focusSelectedRenameIcon() {
+        if (btnIconGamepad != null && btnIconGamepad.isSelected()) {
+            btnIconGamepad.requestFocus();
+        } else if (btnIconPc != null && btnIconPc.isSelected()) {
+            btnIconPc.requestFocus();
+        } else if (btnIconTv != null && btnIconTv.isSelected()) {
+            btnIconTv.requestFocus();
+        } else if (btnIconHdmi != null) {
+            btnIconHdmi.requestFocus();
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (flPinOverlay != null && flPinOverlay.getVisibility() == View.VISIBLE) {
+            hidePinPrompt();
+            return;
+        }
+        if (flRenameOverlay != null && flRenameOverlay.getVisibility() == View.VISIBLE) {
+            hideRenameInputDialog();
+            return;
+        }
+        if (flOptionsOverlay != null && flOptionsOverlay.getVisibility() == View.VISIBLE) {
+            hideAppOptions();
+            return;
+        }
+        if (flSettingsOverlay != null && flSettingsOverlay.getVisibility() == View.VISIBLE) {
+            hideZenithSettings();
+            return;
+        }
+        if (flDrawer != null && flDrawer.getVisibility() == View.VISIBLE) {
+            showHomeDashboard();
+            return;
+        }
+        super.onBackPressed();
     }
 
     @Override
