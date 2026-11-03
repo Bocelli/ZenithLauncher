@@ -75,6 +75,36 @@
         android:textSize="14sp"
         android:textStyle="bold" />
 
+    <!-- Button: Inputs Visibility Toggle -->
+    <TextView
+        android:id="@+id/btn_set_inputs_visibility"
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/dialog_button_selector"
+        android:focusable="true"
+        android:clickable="true"
+        android:gravity="center"
+        android:text="📺 Sezione Ingressi: Visibile"
+        android:textColor="@color/dialog_button_text_color"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <!-- Button: Reset Inputs -->
+    <TextView
+        android:id="@+id/btn_set_inputs_reset"
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/dialog_button_selector"
+        android:focusable="true"
+        android:clickable="true"
+        android:gravity="center"
+        android:text="🔄 Ripristina Ingressi TCL (3 HDMI)"
+        android:textColor="@color/dialog_button_text_color"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
     <!-- Button 3: Change PIN -->
     <TextView
         android:id="@+id/btn_set_change_pin"

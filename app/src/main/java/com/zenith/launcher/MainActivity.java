@@ -92,6 +92,8 @@ public class MainActivity extends Activity {
     private TextView btnSetScreensaverTimeout;
     private TextView btnSetScreensaverTest;
     private TextView btnSetWeatherCity;
+    private TextView btnSetInputsVisibility;
+    private TextView btnSetInputsReset;
     private TextView btnSetChangePin;
     private TextView btnSetFireTv;
     private TextView btnSetClose;
@@ -116,6 +118,7 @@ public class MainActivity extends Activity {
     private TextView btnIconTv;
     private TextView btnSaveInput;
     private TextView btnCancelInput;
+    private TextView btnDeleteInput;
     private TvInputItem currentRenameItem = null;
     private String selectedRenameIcon = "hdmi";
 
@@ -124,6 +127,7 @@ public class MainActivity extends Activity {
     private SharedPreferences prefs;
 
     // Preference keys
+    private static final String PREF_SHOW_INPUTS_SECTION = "show_inputs_section";
     private static final String PREF_FAVORITES = "favorite_packages";
     private static final String PREF_LOCKED_PKGS = "locked_packages";
     private static final String PREF_MASTER_PIN = "master_pin";
@@ -554,6 +558,8 @@ public class MainActivity extends Activity {
         btnSetScreensaverTimeout = findViewById(R.id.btn_set_screensaver_timeout);
         btnSetScreensaverTest = findViewById(R.id.btn_set_screensaver_test);
         btnSetWeatherCity = findViewById(R.id.btn_set_weather_city);
+        btnSetInputsVisibility = findViewById(R.id.btn_set_inputs_visibility);
+        btnSetInputsReset = findViewById(R.id.btn_set_inputs_reset);
         btnSetChangePin = findViewById(R.id.btn_set_change_pin);
         btnSetFireTv = findViewById(R.id.btn_set_firetv);
         btnSetClose = findViewById(R.id.btn_set_close);
@@ -579,6 +585,24 @@ public class MainActivity extends Activity {
                 public void onClick(View v) {
                     hideZenithSettings();
                     showWeatherCityDialog();
+                }
+            });
+        }
+
+        if (btnSetInputsVisibility != null) {
+            btnSetInputsVisibility.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    toggleInputsSectionVisibility();
+                }
+            });
+        }
+
+        if (btnSetInputsReset != null) {
+            btnSetInputsReset.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    resetInputsToDefault();
                 }
             });
         }
@@ -627,6 +651,7 @@ public class MainActivity extends Activity {
         btnIconTv = findViewById(R.id.btn_icon_tv);
         btnSaveInput = findViewById(R.id.btn_save_input);
         btnCancelInput = findViewById(R.id.btn_cancel_input);
+        btnDeleteInput = findViewById(R.id.btn_delete_input);
 
         setupRenameDialogListeners();
     }
@@ -705,6 +730,15 @@ public class MainActivity extends Activity {
                 @Override
                 public void onClick(View v) {
                     hideRenameInputDialog();
+                }
+            });
+        }
+
+        if (btnDeleteInput != null) {
+            btnDeleteInput.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    deleteCurrentInput();
                 }
             });
         }
@@ -1000,6 +1034,7 @@ public class MainActivity extends Activity {
     private void showZenithSettings(View targetFocus) {
         updateScreensaverTimeoutLabel();
         updateWeatherSettingsLabel();
+        updateInputsVisibilityLabel();
         setOverlayModal(true);
         flSettingsOverlay.setVisibility(View.VISIBLE);
         if (targetFocus != null) {
@@ -1055,6 +1090,52 @@ public class MainActivity extends Activity {
         if (btnSetWeatherCity != null) {
             btnSetWeatherCity.setText("📍 Città Meteo: " + WeatherHelper.getCurrentCityDisplay(this));
         }
+    }
+
+    private void updateInputsVisibilityLabel() {
+        if (btnSetInputsVisibility != null) {
+            boolean visible = prefs.getBoolean(PREF_SHOW_INPUTS_SECTION, true);
+            btnSetInputsVisibility.setText("📺 Sezione Ingressi: " + (visible ? "Visibile" : "Nascosta"));
+        }
+    }
+
+    private void toggleInputsSectionVisibility() {
+        boolean current = prefs.getBoolean(PREF_SHOW_INPUTS_SECTION, true);
+        boolean next = !current;
+        prefs.edit().putBoolean(PREF_SHOW_INPUTS_SECTION, next).apply();
+        updateInputsVisibilityLabel();
+        buildInputs();
+        Toast.makeText(this, next ? "Sezione Ingressi mostrata" : "Sezione Ingressi nascosta", Toast.LENGTH_SHORT).show();
+    }
+
+    private void resetInputsToDefault() {
+        prefs.edit()
+                .putBoolean(PREF_SHOW_INPUTS_SECTION, true)
+                .putBoolean("input_1_visible", true)
+                .putBoolean("input_2_visible", true)
+                .putBoolean("input_3_visible", true)
+                .remove("input_1_title")
+                .remove("input_1_sub")
+                .remove("input_1_icon")
+                .remove("input_2_title")
+                .remove("input_2_sub")
+                .remove("input_2_icon")
+                .remove("input_3_title")
+                .remove("input_3_sub")
+                .remove("input_3_icon")
+                .apply();
+        updateInputsVisibilityLabel();
+        buildInputs();
+        Toast.makeText(this, "Ingressi TCL (HDMI 1, 2, 3) ripristinati", Toast.LENGTH_SHORT).show();
+    }
+
+    private void deleteCurrentInput() {
+        if (currentRenameItem == null) return;
+        prefs.edit().putBoolean("input_" + currentRenameItem.id + "_visible", false).apply();
+        String title = currentRenameItem.title;
+        hideRenameInputDialog();
+        buildInputs();
+        Toast.makeText(this, "Ingresso '" + title + "' rimosso. Puoi ripristinarlo dalle Impostazioni.", Toast.LENGTH_LONG).show();
     }
 
     private void showWeatherCityDialog() {
@@ -1636,23 +1717,33 @@ public class MainActivity extends Activity {
 
     private List<TvInputItem> getTvInputItems() {
         List<TvInputItem> list = new ArrayList<>();
-        list.add(new TvInputItem(1,
-                prefs.getString("input_1_title", "Android TV"),
-                prefs.getString("input_1_sub", "HDMI 1 • Connesso"),
-                prefs.getString("input_1_icon", "hdmi"),
-                "com.mediatek.tis/.HdmiInputService/HW2"));
+        if (!prefs.getBoolean(PREF_SHOW_INPUTS_SECTION, true)) {
+            return list;
+        }
 
-        list.add(new TvInputItem(2,
-                prefs.getString("input_2_title", "Switch 2"),
-                prefs.getString("input_2_sub", "HDMI 2 • Connesso"),
-                prefs.getString("input_2_icon", "gamepad"),
-                "com.mediatek.tis/.HdmiInputService/HW3"));
+        if (prefs.getBoolean("input_1_visible", true)) {
+            list.add(new TvInputItem(1,
+                    prefs.getString("input_1_title", "Android TV"),
+                    prefs.getString("input_1_sub", "HDMI 1 • Connesso"),
+                    prefs.getString("input_1_icon", "hdmi"),
+                    "com.mediatek.tis/.HdmiInputService/HW2"));
+        }
 
-        list.add(new TvInputItem(3,
-                prefs.getString("input_3_title", "Series X"),
-                prefs.getString("input_3_sub", "HDMI 3 • Connesso"),
-                prefs.getString("input_3_icon", "gamepad"),
-                "com.mediatek.tis/.HdmiInputService/HW4"));
+        if (prefs.getBoolean("input_2_visible", true)) {
+            list.add(new TvInputItem(2,
+                    prefs.getString("input_2_title", "Switch 2"),
+                    prefs.getString("input_2_sub", "HDMI 2 • Connesso"),
+                    prefs.getString("input_2_icon", "gamepad"),
+                    "com.mediatek.tis/.HdmiInputService/HW3"));
+        }
+
+        if (prefs.getBoolean("input_3_visible", true)) {
+            list.add(new TvInputItem(3,
+                    prefs.getString("input_3_title", "Series X"),
+                    prefs.getString("input_3_sub", "HDMI 3 • Connesso"),
+                    prefs.getString("input_3_icon", "gamepad"),
+                    "com.mediatek.tis/.HdmiInputService/HW4"));
+        }
 
         return list;
     }
@@ -1666,8 +1757,19 @@ public class MainActivity extends Activity {
 
     private void buildInputs() {
         llInputsContainer.removeAllViews();
-        LayoutInflater inflater = LayoutInflater.from(this);
         final List<TvInputItem> inputs = getTvInputItems();
+        View tvInputsHeader = findViewById(R.id.tv_inputs_header);
+        View hsvInputs = findViewById(R.id.hsv_inputs);
+        if (inputs.isEmpty()) {
+            if (tvInputsHeader != null) tvInputsHeader.setVisibility(View.GONE);
+            if (hsvInputs != null) hsvInputs.setVisibility(View.GONE);
+            return;
+        } else {
+            if (tvInputsHeader != null) tvInputsHeader.setVisibility(View.VISIBLE);
+            if (hsvInputs != null) hsvInputs.setVisibility(View.VISIBLE);
+        }
+
+        LayoutInflater inflater = LayoutInflater.from(this);
 
         for (int i = 0; i < inputs.size(); i++) {
             final TvInputItem item = inputs.get(i);
@@ -1845,7 +1947,18 @@ public class MainActivity extends Activity {
                         if (btnSaveInput != null) btnSaveInput.requestFocus();
                         return true;
                     }
+                    if ((btnSaveInput != null && btnSaveInput.hasFocus()) || (btnCancelInput != null && btnCancelInput.hasFocus())) {
+                        if (btnDeleteInput != null) btnDeleteInput.requestFocus();
+                        return true;
+                    }
+                    if (btnDeleteInput != null && btnDeleteInput.hasFocus()) {
+                        return true;
+                    }
                 } else if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                    if (btnDeleteInput != null && btnDeleteInput.hasFocus()) {
+                        if (btnSaveInput != null) btnSaveInput.requestFocus();
+                        return true;
+                    }
                     if (btnSaveInput != null && btnSaveInput.hasFocus()) {
                         focusSelectedRenameIcon();
                         return true;
@@ -1868,9 +1981,11 @@ public class MainActivity extends Activity {
                 } else if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
                     if (btnIconHdmi != null && btnIconHdmi.hasFocus()) return true;
                     if (btnSaveInput != null && btnSaveInput.hasFocus()) return true;
+                    if (btnDeleteInput != null && btnDeleteInput.hasFocus()) return true;
                 } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
                     if (btnIconTv != null && btnIconTv.hasFocus()) return true;
                     if (btnCancelInput != null && btnCancelInput.hasFocus()) return true;
+                    if (btnDeleteInput != null && btnDeleteInput.hasFocus()) return true;
                 } else if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
                     if (etInputTitle != null && etInputTitle.hasFocus()) {
                         showSoftKeyboard(etInputTitle);
