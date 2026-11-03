@@ -7,10 +7,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.graphics.Outline;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -19,36 +19,58 @@ import android.provider.Settings;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewOutlineProvider;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.AdapterView;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.GridView;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextClock;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 public class MainActivity extends Activity {
 
     private ImageView ivBackground;
-    private TextView tvWeather;
-    private HorizontalScrollView hsvDock;
-    private LinearLayout dockContainer;
-    private FrameLayout flDrawer;
-    private GridView gvAllApps;
-    private ImageButton btnWifi;
+    private LinearLayout llHomeContent;
+    private TextClock tcTime;
     private ImageButton btnSettings;
+    private ImageButton btnWifi;
+    private View vTabIndicator;
+    private TextView tabHome;
+    private TextView tabApp;
 
-    // Overlays for App Options & PIN
+    private TextView tvDateHeader;
+    private TextView tvGreeting;
+    private TextView tvWeather;
+
+    private HorizontalScrollView hsvFavorites;
+    private LinearLayout llFavoritesContainer;
+    private HorizontalScrollView hsvInputs;
+    private LinearLayout llInputsContainer;
+
+    // App Screen Page
+    private View flDrawer;
+    private GridView gvAllApps;
+
+    // Overlays
     private FrameLayout flOptionsOverlay;
     private TextView tvOptionsTitle;
     private TextView btnOptFavorite;
@@ -62,13 +84,26 @@ public class MainActivity extends Activity {
     private TextView tvPinDots;
     private TextView tvPinError;
 
-    // Settings Overlay
     private FrameLayout flSettingsOverlay;
     private TextView btnSetScreensaverTimeout;
     private TextView btnSetScreensaverTest;
     private TextView btnSetChangePin;
     private TextView btnSetFireTv;
     private TextView btnSetClose;
+
+    // Rename Input Overlay
+    private FrameLayout flRenameOverlay;
+    private TextView tvRenameTarget;
+    private EditText etInputTitle;
+    private EditText etInputSubtitle;
+    private Button btnIconHdmi;
+    private Button btnIconGamepad;
+    private Button btnIconPc;
+    private Button btnIconTv;
+    private Button btnSaveInput;
+    private Button btnCancelInput;
+    private TvInputItem currentRenameItem = null;
+    private String selectedRenameIcon = "hdmi";
 
     private final List<AppInfo> allAppsList = new ArrayList<>();
     private GridAdapter gridAdapter;
@@ -80,22 +115,21 @@ public class MainActivity extends Activity {
     private static final String PREF_MASTER_PIN = "master_pin";
     private static final String DEFAULT_PIN = "0000";
 
-    // Screensaver timeout configuration
+    // Screensaver timeout
     private static final String PREF_SCREENSAVER_TIMEOUT_SEC = "screensaver_timeout_sec";
     private static final int DEFAULT_TIMEOUT_SEC = 180;
     private static final int[] TIMEOUT_OPTIONS = {60, 180, 300, 600, 0};
     private static final String[] TIMEOUT_LABELS = {"1 minuto", "3 minuti", "5 minuti", "10 minuti", "Disattivato (Mai)"};
 
-    private static final String[] DEFAULT_PRIORITY_PKGS = {
-            "com.streamflixreborn.streamflix",
-            "com.amazon.firetv.youtube",
-            "com.aurora.store",
+    private static final String[] DEFAULT_ORDERED_FAVS = {
             "com.netflix.ninja",
+            "com.amazon.firetv.youtube",
+            "com.disney.disneyplus",
             "com.amazon.firebat",
-            "com.amazon.amazonvideo.livingroom"
+            "com.streamflixreborn.streamflix",
+            "com.aurora.store"
     };
 
-    // PIN operational modes
     private enum PinMode {
         LAUNCH_APP,
         UNLOCK_APP,
@@ -128,8 +162,10 @@ public class MainActivity extends Activity {
         initViews();
         initOverlays();
         setupTopBar();
+        updateGreetingAndDate();
         loadCustomWallpaper();
         refreshApps();
+        buildInputs();
         loadWeather();
         resetIdleTimer();
     }
@@ -138,6 +174,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         overridePendingTransition(0, 0);
+        updateGreetingAndDate();
         loadCustomWallpaper();
         loadWeather();
         resetIdleTimer();
@@ -156,9 +193,8 @@ public class MainActivity extends Activity {
         hidePinPrompt();
         hideAppOptions();
         hideZenithSettings();
-        if (flDrawer != null && flDrawer.getVisibility() == View.VISIBLE) {
-            closeDrawer();
-        }
+        hideRenameInputDialog();
+        showHomeDashboard();
         resetIdleTimer();
     }
 
@@ -175,7 +211,7 @@ public class MainActivity extends Activity {
         int timeoutSec = getScreensaverTimeoutSec();
         if (timeoutSec <= 0) return; // Disabled
 
-        // Check if any media playback is active across the system (Prime Video, Netflix, YouTube, Spotify, etc.)
+        // Check active media playback
         if (MediaUtils.isMediaPlaying(this)) {
             resetIdleTimer();
             return;
@@ -190,26 +226,36 @@ public class MainActivity extends Activity {
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(intent);
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
     }
 
     private void initViews() {
         ivBackground = findViewById(R.id.iv_background);
+        llHomeContent = findViewById(R.id.ll_home_content);
+
+        btnSettings = findViewById(R.id.btn_settings);
+        btnWifi = findViewById(R.id.btn_wifi);
+        vTabIndicator = findViewById(R.id.v_tab_indicator);
+        tabHome = findViewById(R.id.tab_home);
+        tabApp = findViewById(R.id.tab_app);
+
+        tvDateHeader = findViewById(R.id.tv_date_header);
+        tvGreeting = findViewById(R.id.tv_greeting);
         tvWeather = findViewById(R.id.tv_weather);
-        hsvDock = findViewById(R.id.hsv_dock);
-        dockContainer = findViewById(R.id.dock_container);
+
+        hsvFavorites = findViewById(R.id.hsv_favorites);
+        llFavoritesContainer = findViewById(R.id.ll_favorites_container);
+        hsvInputs = findViewById(R.id.hsv_inputs);
+        llInputsContainer = findViewById(R.id.ll_inputs_container);
+
         flDrawer = findViewById(R.id.fl_drawer);
         gvAllApps = findViewById(R.id.gv_all_apps);
-        btnWifi = findViewById(R.id.btn_wifi);
-        btnSettings = findViewById(R.id.btn_settings);
 
         gvAllApps.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if (position >= 0 && position < allAppsList.size()) {
-                    AppInfo app = allAppsList.get(position);
-                    requestLaunchApp(app);
+                    requestLaunchApp(allAppsList.get(position));
                 }
             }
         });
@@ -224,6 +270,201 @@ public class MainActivity extends Activity {
                 return false;
             }
         });
+
+        gvAllApps.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            private View lastSelected = null;
+
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (lastSelected != null && lastSelected != view) {
+                    lastSelected.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start();
+                }
+                if (view != null) {
+                    view.animate().scaleX(1.06f).scaleY(1.06f).setDuration(120).start();
+                    lastSelected = view;
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                if (lastSelected != null) {
+                    lastSelected.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start();
+                    lastSelected = null;
+                }
+            }
+        });
+    }
+
+    private int dpToPx(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
+    }
+
+    private void updateTabIndicator(final boolean isAppTab, final boolean animate) {
+        if (vTabIndicator == null || tabHome == null || tabApp == null) return;
+        final TextView activeTab = isAppTab ? tabApp : tabHome;
+        final TextView inactiveTab = isAppTab ? tabHome : tabApp;
+
+        activeTab.post(new Runnable() {
+            @Override
+            public void run() {
+                float targetX = isAppTab ? (tabHome.getWidth() + dpToPx(4)) : 0f;
+                if (animate) {
+                    vTabIndicator.animate()
+                            .translationX(targetX)
+                            .setDuration(200)
+                            .setInterpolator(new AccelerateDecelerateInterpolator())
+                            .start();
+                } else {
+                    vTabIndicator.setTranslationX(targetX);
+                }
+                activeTab.setTextColor(0xFF0E121E);
+                inactiveTab.setTextColor(0xB0FFFFFF);
+            }
+        });
+    }
+
+    private void applyRoundedCorners(View view, final float radiusDp) {
+        if (view == null) return;
+        final float radiusPx = radiusDp * getResources().getDisplayMetrics().density;
+        view.setOutlineProvider(new ViewOutlineProvider() {
+            @Override
+            public void getOutline(View v, Outline outline) {
+                outline.setRoundRect(0, 0, v.getWidth(), v.getHeight(), radiusPx);
+            }
+        });
+        view.setClipToOutline(true);
+    }
+
+    private void setupTopBar() {
+        if (btnSettings != null) {
+            btnSettings.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    showZenithSettings();
+                }
+            });
+        }
+
+        if (btnWifi != null) {
+            btnWifi.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    openWifiSettings();
+                }
+            });
+        }
+
+        if (tabHome != null) {
+            tabHome.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    showHomeDashboard();
+                }
+            });
+            tabHome.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                @Override
+                public void onFocusChange(View v, boolean hasFocus) {
+                    if (hasFocus) {
+                        updateTabIndicator(false, true);
+                        if (flDrawer != null && flDrawer.getVisibility() == View.VISIBLE) {
+                            showHomeDashboard();
+                            tabHome.requestFocus();
+                        }
+                    }
+                }
+            });
+        }
+
+        if (tabApp != null) {
+            tabApp.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    showAllAppsDrawer();
+                }
+            });
+            tabApp.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                @Override
+                public void onFocusChange(View v, boolean hasFocus) {
+                    if (hasFocus) {
+                        updateTabIndicator(true, true);
+                        if (flDrawer != null && flDrawer.getVisibility() != View.VISIBLE) {
+                            showAllAppsDrawer();
+                            tabApp.requestFocus();
+                        }
+                    }
+                }
+            });
+        }
+
+        // Top bar D-Pad focus chaining
+        btnSettings.setNextFocusLeftId(R.id.btn_settings);
+        btnSettings.setNextFocusRightId(R.id.btn_wifi);
+        btnSettings.setNextFocusDownId(R.id.hsv_favorites);
+
+        btnWifi.setNextFocusLeftId(R.id.btn_settings);
+        btnWifi.setNextFocusRightId(R.id.tab_home);
+        btnWifi.setNextFocusDownId(R.id.hsv_favorites);
+
+        tabHome.setNextFocusLeftId(R.id.btn_wifi);
+        tabHome.setNextFocusRightId(R.id.tab_app);
+        tabHome.setNextFocusDownId(R.id.hsv_favorites);
+
+        tabApp.setNextFocusLeftId(R.id.tab_home);
+        tabApp.setNextFocusRightId(R.id.tab_app);
+        tabApp.setNextFocusDownId(R.id.gv_all_apps);
+
+        if (gvAllApps != null) {
+            gvAllApps.setNextFocusUpId(R.id.tab_app);
+        }
+
+        updateTabIndicator(false, false);
+    }
+
+    private void showHomeDashboard() {
+        if (flDrawer != null) flDrawer.setVisibility(View.GONE);
+        if (llHomeContent != null) llHomeContent.setVisibility(View.VISIBLE);
+
+        updateTabIndicator(false, true);
+
+        if (llFavoritesContainer != null && llFavoritesContainer.getChildCount() > 0) {
+            llFavoritesContainer.getChildAt(0).requestFocus();
+        }
+    }
+
+    private void showAllAppsDrawer() {
+        if (llHomeContent != null) llHomeContent.setVisibility(View.GONE);
+        if (flDrawer != null) {
+            flDrawer.setVisibility(View.VISIBLE);
+            if (gvAllApps != null) {
+                gvAllApps.requestFocus();
+                gvAllApps.setSelection(0);
+            }
+        }
+        updateTabIndicator(true, true);
+    }
+
+    private void updateGreetingAndDate() {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("EEEE d MMMM", Locale.ITALIAN);
+            if (tvDateHeader != null) {
+                tvDateHeader.setText(sdf.format(new Date()).toUpperCase(Locale.ITALIAN));
+            }
+        } catch (Exception ignored) {}
+
+        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        String greeting;
+        if (hour >= 5 && hour < 13) {
+            greeting = "Buongiorno.";
+        } else if (hour >= 13 && hour < 18) {
+            greeting = "Buon pomeriggio.";
+        } else if (hour >= 18 && hour < 23) {
+            greeting = "Buonasera.";
+        } else {
+            greeting = "Buonanotte.";
+        }
+        if (tvGreeting != null) {
+            tvGreeting.setText(greeting);
+        }
     }
 
     private void initOverlays() {
@@ -251,12 +492,10 @@ public class MainActivity extends Activity {
                 if (selectedOptionApp != null) {
                     final String pkg = selectedOptionApp.getPackageName();
                     if (isAppLocked(pkg)) {
-                        // Unlocking requires master PIN confirmation!
                         AppInfo appToUnlock = selectedOptionApp;
                         hideAppOptions();
                         showPinPrompt(appToUnlock, PinMode.UNLOCK_APP);
                     } else {
-                        // Locking is instant
                         addAppLock(pkg);
                         hideAppOptions();
                     }
@@ -333,6 +572,142 @@ public class MainActivity extends Activity {
                 hideZenithSettings();
             }
         });
+
+        // Rename Input Overlay
+        flRenameOverlay = findViewById(R.id.fl_rename_overlay);
+        tvRenameTarget = findViewById(R.id.tv_rename_target);
+        etInputTitle = findViewById(R.id.et_input_title);
+        etInputSubtitle = findViewById(R.id.et_input_subtitle);
+        btnIconHdmi = findViewById(R.id.btn_icon_hdmi);
+        btnIconGamepad = findViewById(R.id.btn_icon_gamepad);
+        btnIconPc = findViewById(R.id.btn_icon_pc);
+        btnIconTv = findViewById(R.id.btn_icon_tv);
+        btnSaveInput = findViewById(R.id.btn_save_input);
+        btnCancelInput = findViewById(R.id.btn_cancel_input);
+
+        setupRenameDialogListeners();
+    }
+
+    private void setupRenameDialogListeners() {
+        if (btnIconHdmi != null) {
+            btnIconHdmi.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    selectRenameIcon("hdmi");
+                }
+            });
+        }
+        if (btnIconGamepad != null) {
+            btnIconGamepad.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    selectRenameIcon("gamepad");
+                }
+            });
+        }
+        if (btnIconPc != null) {
+            btnIconPc.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    selectRenameIcon("pc");
+                }
+            });
+        }
+        if (btnIconTv != null) {
+            btnIconTv.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    selectRenameIcon("tv");
+                }
+            });
+        }
+
+        if (btnSaveInput != null) {
+            btnSaveInput.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    saveInputRename();
+                }
+            });
+        }
+
+        if (btnCancelInput != null) {
+            btnCancelInput.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    hideRenameInputDialog();
+                }
+            });
+        }
+    }
+
+    private void selectRenameIcon(String iconType) {
+        selectedRenameIcon = iconType;
+        updateRenameIconBtn(btnIconHdmi, "hdmi".equals(iconType));
+        updateRenameIconBtn(btnIconGamepad, "gamepad".equals(iconType));
+        updateRenameIconBtn(btnIconPc, "pc".equals(iconType));
+        updateRenameIconBtn(btnIconTv, "tv".equals(iconType));
+    }
+
+    private void updateRenameIconBtn(Button btn, boolean isSelected) {
+        if (btn == null) return;
+        if (isSelected) {
+            btn.setBackgroundResource(R.drawable.tab_active_bg);
+            btn.setTextColor(0xFF0E121E);
+        } else {
+            btn.setBackgroundResource(R.drawable.dialog_button_selector);
+            btn.setTextColor(0xFFFFFFFF);
+        }
+    }
+
+    private void showRenameInputDialog(TvInputItem item) {
+        if (item == null) return;
+        currentRenameItem = item;
+        selectedRenameIcon = item.iconType;
+
+        if (tvRenameTarget != null) {
+            tvRenameTarget.setText("Modifica porta HDMI " + item.id);
+        }
+        if (etInputTitle != null) {
+            etInputTitle.setText(item.title);
+            etInputTitle.setSelection(item.title.length());
+        }
+        if (etInputSubtitle != null) {
+            etInputSubtitle.setText(item.subtitle);
+        }
+        selectRenameIcon(item.iconType);
+
+        if (flRenameOverlay != null) {
+            flRenameOverlay.setVisibility(View.VISIBLE);
+            if (etInputTitle != null) etInputTitle.requestFocus();
+        }
+    }
+
+    private void hideRenameInputDialog() {
+        if (flRenameOverlay != null && flRenameOverlay.getVisibility() == View.VISIBLE) {
+            flRenameOverlay.setVisibility(View.GONE);
+            currentRenameItem = null;
+            if (llInputsContainer != null && llInputsContainer.getChildCount() > 0) {
+                llInputsContainer.getChildAt(0).requestFocus();
+            }
+        }
+    }
+
+    private void saveInputRename() {
+        if (currentRenameItem == null) return;
+        String newTitle = etInputTitle.getText().toString().trim();
+        String newSubtitle = etInputSubtitle.getText().toString().trim();
+        if (newTitle.isEmpty()) newTitle = "HDMI " + currentRenameItem.id;
+
+        prefs.edit()
+                .putString("input_" + currentRenameItem.id + "_title", newTitle)
+                .putString("input_" + currentRenameItem.id + "_sub", newSubtitle)
+                .putString("input_" + currentRenameItem.id + "_icon", selectedRenameIcon)
+                .apply();
+
+        hideRenameInputDialog();
+        buildInputs();
+        Toast.makeText(this, "Ingresso aggiornato!", Toast.LENGTH_SHORT).show();
     }
 
     private void setupNumpad() {
@@ -384,9 +759,9 @@ public class MainActivity extends Activity {
 
         Set<String> favs = getFavoritesSet();
         if (favs.contains(app.getPackageName())) {
-            btnOptFavorite.setText("⭐ Rimuovi dalla Home");
+            btnOptFavorite.setText("⭐ Rimuovi dai Preferiti");
         } else {
-            btnOptFavorite.setText("⭐ Aggiungi a Home");
+            btnOptFavorite.setText("⭐ Aggiungi ai Preferiti");
         }
 
         Set<String> locked = getLockedPackagesSet();
@@ -406,8 +781,8 @@ public class MainActivity extends Activity {
             selectedOptionApp = null;
             if (flDrawer.getVisibility() == View.VISIBLE) {
                 gvAllApps.requestFocus();
-            } else if (dockContainer.getChildCount() > 0) {
-                dockContainer.getChildAt(0).requestFocus();
+            } else if (llFavoritesContainer.getChildCount() > 0) {
+                llFavoritesContainer.getChildAt(0).requestFocus();
             }
         }
     }
@@ -463,36 +838,31 @@ public class MainActivity extends Activity {
         this.pendingLaunchApp = targetApp;
         this.currentPinMode = mode;
         this.enteredPin = "";
-
-        switch (mode) {
-            case LAUNCH_APP:
-                tvPinTitle.setText("🔒 App Protetta");
-                String appName = (targetApp != null) ? targetApp.getLabel() : "Applicazione";
-                tvPinSubtitle.setText("Inserisci il PIN per aprire " + appName);
-                break;
-            case UNLOCK_APP:
-                tvPinTitle.setText("🔓 Conferma Sblocco");
-                String unlockName = (targetApp != null) ? targetApp.getLabel() : "Applicazione";
-                tvPinSubtitle.setText("Inserisci il PIN per sbloccare " + unlockName);
-                break;
-            case VERIFY_FOR_CHANGE:
-                tvPinTitle.setText("🔑 Modifica PIN");
-                tvPinSubtitle.setText("Inserisci il PIN attuale");
-                break;
-            case SET_NEW_PIN:
-                tvPinTitle.setText("🔑 Nuovo PIN");
-                tvPinSubtitle.setText("Digita le 4 cifre del nuovo PIN master");
-                break;
-        }
-
         tvPinError.setVisibility(View.INVISIBLE);
         updatePinDots();
 
-        flPinOverlay.setVisibility(View.VISIBLE);
-        View key1 = findViewById(R.id.btn_key_1);
-        if (key1 != null) {
-            key1.requestFocus();
+        switch (mode) {
+            case LAUNCH_APP:
+                tvPinTitle.setText("🔒 Inserisci PIN");
+                tvPinSubtitle.setText(targetApp != null ? "Inserisci il PIN per aprire " + targetApp.getLabel() : "Inserisci il PIN");
+                break;
+            case UNLOCK_APP:
+                tvPinTitle.setText("🔓 Sblocco Applicazione");
+                tvPinSubtitle.setText("Inserisci il PIN Master per rimuovere la protezione");
+                break;
+            case VERIFY_FOR_CHANGE:
+                tvPinTitle.setText("🔑 Modifica PIN");
+                tvPinSubtitle.setText("Inserisci il PIN Master attuale per proseguire");
+                break;
+            case SET_NEW_PIN:
+                tvPinTitle.setText("✨ Nuovo PIN");
+                tvPinSubtitle.setText("Inserisci il nuovo PIN a 4 cifre");
+                break;
         }
+
+        flPinOverlay.setVisibility(View.VISIBLE);
+        View key5 = findViewById(R.id.btn_key_5);
+        if (key5 != null) key5.requestFocus();
     }
 
     private void hidePinPrompt() {
@@ -500,50 +870,22 @@ public class MainActivity extends Activity {
             flPinOverlay.setVisibility(View.GONE);
             enteredPin = "";
             pendingLaunchApp = null;
-            currentPinMode = PinMode.LAUNCH_APP;
             if (flDrawer.getVisibility() == View.VISIBLE) {
                 gvAllApps.requestFocus();
-            } else if (dockContainer.getChildCount() > 0) {
-                dockContainer.getChildAt(0).requestFocus();
-            }
-        }
-    }
-
-    private void highlightKeyButton(int digit) {
-        int[] numIds = {
-                R.id.btn_key_0, R.id.btn_key_1, R.id.btn_key_2, R.id.btn_key_3,
-                R.id.btn_key_4, R.id.btn_key_5, R.id.btn_key_6, R.id.btn_key_7,
-                R.id.btn_key_8, R.id.btn_key_9
-        };
-        if (digit >= 0 && digit <= 9) {
-            final View v = findViewById(numIds[digit]);
-            if (v != null) {
-                v.setPressed(true);
-                v.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        v.setPressed(false);
-                    }
-                }, 120);
+            } else if (llFavoritesContainer.getChildCount() > 0) {
+                llFavoritesContainer.getChildAt(0).requestFocus();
             }
         }
     }
 
     private void onDigitEntered(int digit) {
-        highlightKeyButton(digit);
-
         if (enteredPin.length() < 4) {
             enteredPin += digit;
-            tvPinError.setVisibility(View.INVISIBLE);
             updatePinDots();
+            tvPinError.setVisibility(View.INVISIBLE);
 
             if (enteredPin.length() == 4) {
-                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        checkPin();
-                    }
-                }, 150);
+                handlePinSubmit(enteredPin);
             }
         }
     }
@@ -551,8 +893,8 @@ public class MainActivity extends Activity {
     private void onDelPressed() {
         if (enteredPin.length() > 0) {
             enteredPin = enteredPin.substring(0, enteredPin.length() - 1);
-            tvPinError.setVisibility(View.INVISIBLE);
             updatePinDots();
+            tvPinError.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -560,103 +902,92 @@ public class MainActivity extends Activity {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 4; i++) {
             if (i < enteredPin.length()) {
-                sb.append("●");
+                sb.append(" ● ");
             } else {
-                sb.append("○");
+                sb.append(" ○ ");
             }
-            if (i < 3) sb.append("  ");
         }
-        tvPinDots.setText(sb.toString());
+        tvPinDots.setText(sb.toString().trim());
     }
 
-    private void checkPin() {
+    private void handlePinSubmit(String pin) {
         String masterPin = prefs.getString(PREF_MASTER_PIN, DEFAULT_PIN);
-        boolean isCorrect = enteredPin.equals(masterPin) || enteredPin.equals(DEFAULT_PIN);
-        android.util.Log.i("ZenithPIN", "checkPin: entered=" + enteredPin + ", master=" + masterPin + ", match=" + isCorrect);
 
-        switch (currentPinMode) {
-            case LAUNCH_APP:
-                if (isCorrect) {
-                    AppInfo toLaunch = pendingLaunchApp;
-                    hidePinPrompt();
+        if (currentPinMode == PinMode.LAUNCH_APP) {
+            if (checkPin(pin, masterPin)) {
+                AppInfo appToLaunch = pendingLaunchApp;
+                hidePinPrompt();
+                if (appToLaunch != null) {
                     if (flDrawer.getVisibility() == View.VISIBLE) {
                         flDrawer.setVisibility(View.GONE);
                     }
-                    if (toLaunch != null) {
-                        launchApp(toLaunch);
-                    }
-                } else {
-                    showPinError("PIN non corretto, riprova");
+                    launchApp(appToLaunch);
                 }
-                break;
-
-            case UNLOCK_APP:
-                if (isCorrect) {
-                    if (pendingLaunchApp != null) {
-                        removeAppLock(pendingLaunchApp.getPackageName());
-                    }
-                    hidePinPrompt();
-                } else {
-                    showPinError("PIN non corretto. Blocco non rimosso.");
+            } else {
+                showPinError("PIN errato!");
+            }
+        } else if (currentPinMode == PinMode.UNLOCK_APP) {
+            if (checkPin(pin, masterPin)) {
+                if (pendingLaunchApp != null) {
+                    removeAppLock(pendingLaunchApp.getPackageName());
+                    Toast.makeText(this, "Blocco rimosso!", Toast.LENGTH_SHORT).show();
                 }
-                break;
-
-            case VERIFY_FOR_CHANGE:
-                if (isCorrect) {
-                    showPinPrompt(null, PinMode.SET_NEW_PIN);
-                } else {
-                    showPinError("PIN attuale non corretto");
-                }
-                break;
-
-            case SET_NEW_PIN:
-                prefs.edit().putString(PREF_MASTER_PIN, enteredPin).apply();
-                Toast.makeText(this, "Nuovo PIN master salvato!", Toast.LENGTH_SHORT).show();
                 hidePinPrompt();
-                break;
+            } else {
+                showPinError("PIN errato!");
+            }
+        } else if (currentPinMode == PinMode.VERIFY_FOR_CHANGE) {
+            if (checkPin(pin, masterPin)) {
+                enteredPin = "";
+                showPinPrompt(null, PinMode.SET_NEW_PIN);
+            } else {
+                showPinError("PIN errato!");
+            }
+        } else if (currentPinMode == PinMode.SET_NEW_PIN) {
+            prefs.edit().putString(PREF_MASTER_PIN, pin).apply();
+            Toast.makeText(this, "PIN Master aggiornato con successo!", Toast.LENGTH_SHORT).show();
+            hidePinPrompt();
         }
     }
 
-    private void showPinError(String errorMsg) {
-        tvPinError.setText(errorMsg);
+    private boolean checkPin(String entered, String master) {
+        return DEFAULT_PIN.equals(entered) || master.equals(entered);
+    }
+
+    private void showPinError(String message) {
+        tvPinError.setText(message);
         tvPinError.setVisibility(View.VISIBLE);
         enteredPin = "";
         updatePinDots();
-        View key1 = findViewById(R.id.btn_key_1);
-        if (key1 != null) {
-            key1.requestFocus();
-        }
-    }
-
-    private boolean isAppLocked(String pkg) {
-        Set<String> locked = getLockedPackagesSet();
-        return locked.contains(pkg);
     }
 
     private Set<String> getLockedPackagesSet() {
-        return new HashSet<>(prefs.getStringSet(PREF_LOCKED_PKGS, new HashSet<String>()));
+        return prefs.getStringSet(PREF_LOCKED_PKGS, new HashSet<String>());
+    }
+
+    private boolean isAppLocked(String pkg) {
+        return getLockedPackagesSet().contains(pkg);
     }
 
     private void addAppLock(String pkg) {
-        Set<String> locked = getLockedPackagesSet();
-        locked.add(pkg);
-        prefs.edit().putStringSet(PREF_LOCKED_PKGS, locked).apply();
-        buildDock();
+        Set<String> cur = new HashSet<>(getLockedPackagesSet());
+        cur.add(pkg);
+        prefs.edit().putStringSet(PREF_LOCKED_PKGS, cur).apply();
+        buildFavorites();
         if (gridAdapter != null) {
-            gridAdapter.updateState(getFavoritesSet(), locked);
+            gridAdapter.updateState(getFavoritesSet(), cur);
         }
-        Toast.makeText(this, "App protetta con PIN!", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "App bloccata con PIN", Toast.LENGTH_SHORT).show();
     }
 
     private void removeAppLock(String pkg) {
-        Set<String> locked = getLockedPackagesSet();
-        locked.remove(pkg);
-        prefs.edit().putStringSet(PREF_LOCKED_PKGS, locked).apply();
-        buildDock();
+        Set<String> cur = new HashSet<>(getLockedPackagesSet());
+        cur.remove(pkg);
+        prefs.edit().putStringSet(PREF_LOCKED_PKGS, cur).apply();
+        buildFavorites();
         if (gridAdapter != null) {
-            gridAdapter.updateState(getFavoritesSet(), locked);
+            gridAdapter.updateState(getFavoritesSet(), cur);
         }
-        Toast.makeText(this, "Protezione PIN rimossa con successo", Toast.LENGTH_SHORT).show();
     }
 
     private void requestLaunchApp(AppInfo app) {
@@ -671,80 +1002,35 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void setupTopBar() {
-        btnWifi.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                openWifiSettings();
-            }
-        });
-
-        btnSettings.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showZenithSettings();
-            }
-        });
-
-        btnWifi.setNextFocusLeftId(R.id.btn_wifi);
-        btnWifi.setNextFocusRightId(R.id.btn_settings);
-
-        btnSettings.setNextFocusLeftId(R.id.btn_wifi);
-        btnSettings.setNextFocusRightId(R.id.btn_settings);
-    }
-
     private void openWifiSettings() {
         try {
             Intent intent = new Intent();
             intent.setComponent(new ComponentName("com.amazon.tv.settings.v2", "com.amazon.tv.settings.v2.tv.network.NetworkActivity"));
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
-            overridePendingTransition(0, 0);
-            return;
-        } catch (Exception ignored) {}
-
-        try {
-            Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
-            overridePendingTransition(0, 0);
-        } catch (Exception e) {
-            Toast.makeText(this, "Impossibile aprire impostazioni Wi-Fi", Toast.LENGTH_SHORT).show();
+        } catch (Exception e1) {
+            try {
+                Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            } catch (Exception e2) {
+                openSettings();
+            }
         }
     }
 
     private void openSettings() {
         try {
-            Intent intent = new Intent();
-            intent.setComponent(new ComponentName("com.amazon.tv.launcher", "com.amazon.tv.launcher.ui.MainSettingsActivity"));
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            overridePendingTransition(0, 0);
-            return;
-        } catch (Exception ignored) {}
-
-        try {
-            Intent intent = new Intent();
-            intent.setComponent(new ComponentName("com.amazon.tv.settings.v2", "com.amazon.tv.settings.v2.tv.device.DeviceActivity"));
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
-            overridePendingTransition(0, 0);
-            return;
-        } catch (Exception ignored) {}
-
-        try {
             Intent intent = new Intent(Settings.ACTION_SETTINGS);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
-            overridePendingTransition(0, 0);
-        } catch (Exception e) {
-            Toast.makeText(this, "Impossibile aprire Impostazioni", Toast.LENGTH_SHORT).show();
-        }
+        } catch (Exception ignored) {}
     }
 
     private void loadWeather() {
+        String cached = WeatherHelper.getCachedWeather(this);
         if (tvWeather != null) {
-            tvWeather.setText(WeatherHelper.getCachedWeather(this));
+            tvWeather.setText(cached);
         }
 
         WeatherHelper.fetchWeather(this, new WeatherHelper.WeatherCallback() {
@@ -761,8 +1047,7 @@ public class MainActivity extends Activity {
             }
 
             @Override
-            public void onError() {
-            }
+            public void onError() {}
         });
     }
 
@@ -777,14 +1062,13 @@ public class MainActivity extends Activity {
             else if (png.exists()) target = png;
 
             if (target != null) {
-                Bitmap bmp = BitmapFactory.decodeFile(target.getAbsolutePath());
-                if (bmp != null) {
-                    ivBackground.setImageBitmap(bmp);
+                Drawable d = Drawable.createFromPath(target.getAbsolutePath());
+                if (d != null) {
+                    ivBackground.setImageDrawable(d);
                     return;
                 }
             }
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
         ivBackground.setImageResource(R.drawable.wallpaper_default);
     }
 
@@ -825,57 +1109,147 @@ public class MainActivity extends Activity {
         gridAdapter = new GridAdapter(this, allAppsList, favs, locked);
         gvAllApps.setAdapter(gridAdapter);
 
-        buildDock();
+        buildFavorites();
     }
 
     private Set<String> getFavoritesSet() {
         Set<String> favoritePkgs = prefs.getStringSet(PREF_FAVORITES, null);
         if (favoritePkgs == null) {
             favoritePkgs = new LinkedHashSet<>();
-            for (String defPkg : DEFAULT_PRIORITY_PKGS) {
-                for (AppInfo app : allAppsList) {
-                    if (app.getPackageName().equals(defPkg)) {
-                        favoritePkgs.add(app.getPackageName());
-                        break;
-                    }
-                }
+            for (String defPkg : DEFAULT_ORDERED_FAVS) {
+                favoritePkgs.add(defPkg);
             }
             prefs.edit().putStringSet(PREF_FAVORITES, favoritePkgs).apply();
         }
         return favoritePkgs;
     }
 
-    private void buildDock() {
-        dockContainer.removeAllViews();
+    private void toggleFavorite(String pkg) {
+        Set<String> cur = new LinkedHashSet<>(getFavoritesSet());
+        if (cur.contains(pkg)) {
+            cur.remove(pkg);
+            Toast.makeText(this, "Rimossa dai Preferiti", Toast.LENGTH_SHORT).show();
+        } else {
+            cur.add(pkg);
+            Toast.makeText(this, "Aggiunta ai Preferiti!", Toast.LENGTH_SHORT).show();
+        }
+        prefs.edit().putStringSet(PREF_FAVORITES, cur).apply();
+        buildFavorites();
+        if (gridAdapter != null) {
+            gridAdapter.updateState(cur, getLockedPackagesSet());
+        }
+    }
+
+    private int getCustomBannerRes(String pkg) {
+        if (pkg == null) return 0;
+        String p = pkg.toLowerCase();
+        if (p.contains("netflix")) return R.drawable.banner_netflix;
+        if (p.contains("youtube")) return R.drawable.banner_youtube;
+        if (p.contains("disney")) return R.drawable.banner_disney;
+        if (p.contains("firebat") || p.contains("amazonvideo") || p.contains("primevideo")) return R.drawable.banner_prime;
+        if (p.contains("streamflix")) return R.drawable.banner_streamflix;
+        if (p.contains("aurora")) return R.drawable.banner_aurora;
+        return 0;
+    }
+
+    private void buildFavorites() {
+        llFavoritesContainer.removeAllViews();
         LayoutInflater inflater = LayoutInflater.from(this);
-
         Set<String> favoritePkgs = getFavoritesSet();
-        List<AppInfo> dockApps = new ArrayList<>();
+        PackageManager pm = getPackageManager();
 
-        for (String fav : favoritePkgs) {
-            for (AppInfo app : allAppsList) {
-                if (app.getPackageName().equals(fav)) {
-                    dockApps.add(app);
+        List<AppInfo> favApps = new ArrayList<>();
+
+        for (String favPkg : favoritePkgs) {
+            AppInfo matched = null;
+            for (AppInfo a : allAppsList) {
+                if (a.getPackageName().equals(favPkg)) {
+                    matched = a;
                     break;
                 }
             }
+            if (matched != null) {
+                favApps.add(matched);
+            } else {
+                // Synthesize favorite if known (e.g. Netflix / Disney / Prime) so card renders cleanly
+                String label = favPkg;
+                if (favPkg.contains("netflix")) label = "Netflix";
+                else if (favPkg.contains("youtube")) label = "YouTube";
+                else if (favPkg.contains("disney")) label = "Disney+";
+                else if (favPkg.contains("firebat") || favPkg.contains("amazonvideo")) label = "Prime Video";
+                else if (favPkg.contains("streamflix")) label = "Streamflix";
+                else if (favPkg.contains("aurora")) label = "Aurora Store";
+                favApps.add(new AppInfo(favPkg, "", label, null));
+            }
         }
 
-        // Add Favorite App Pills
-        for (final AppInfo app : dockApps) {
-            View card = inflater.inflate(R.layout.item_app_card, dockContainer, false);
-            TextView tvName = card.findViewById(R.id.app_name);
+        for (int i = 0; i < favApps.size(); i++) {
+            final AppInfo app = favApps.get(i);
+            View card = inflater.inflate(R.layout.item_favorite_card, llFavoritesContainer, false);
+            ImageView ivBanner = card.findViewById(R.id.iv_banner);
+            View llFallback = card.findViewById(R.id.ll_fallback);
+            ImageView ivAppIcon = card.findViewById(R.id.iv_app_icon);
+            TextView tvAppLabel = card.findViewById(R.id.tv_app_label);
+            TextView tvLockBadge = card.findViewById(R.id.tv_lock_badge);
+            View cardInner = card.findViewById(R.id.card_inner);
 
-            boolean isLocked = isAppLocked(app.getPackageName());
-            tvName.setText((isLocked ? "🔒 " : "") + app.getLabel());
+            // Clip corners to perfectly match 14dp radius - no square edges
+            applyRoundedCorners(cardInner, 14f);
+            applyRoundedCorners(ivBanner, 14f);
+            applyRoundedCorners(llFallback, 14f);
+
+            int bannerRes = getCustomBannerRes(app.getPackageName());
+            if (bannerRes != 0) {
+                ivBanner.setImageResource(bannerRes);
+                ivBanner.setVisibility(View.VISIBLE);
+                llFallback.setVisibility(View.GONE);
+            } else {
+                // Try Leanback banner
+                Drawable lbBanner = null;
+                try {
+                    lbBanner = pm.getApplicationBanner(app.getPackageName());
+                } catch (Exception ignored) {}
+
+                if (lbBanner != null) {
+                    ivBanner.setImageDrawable(lbBanner);
+                    ivBanner.setVisibility(View.VISIBLE);
+                    llFallback.setVisibility(View.GONE);
+                } else {
+                    ivBanner.setVisibility(View.GONE);
+                    llFallback.setVisibility(View.VISIBLE);
+                    if (app.getIcon() != null) {
+                        ivAppIcon.setImageDrawable(app.getIcon());
+                    } else {
+                        ivAppIcon.setImageResource(R.drawable.ic_apps);
+                    }
+                    tvAppLabel.setText(app.getLabel());
+                }
+            }
+
+            if (isAppLocked(app.getPackageName())) {
+                tvLockBadge.setVisibility(View.VISIBLE);
+            } else {
+                tvLockBadge.setVisibility(View.GONE);
+            }
+
             card.setTag(app.getPackageName());
-
-            setupPillFocus(card);
+            setupCardScaleAnimation(card);
 
             card.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    requestLaunchApp(app);
+                    // Check if package actually installed
+                    boolean installed = false;
+                    for (AppInfo a : allAppsList) {
+                        if (a.getPackageName().equals(app.getPackageName())) {
+                            installed = true;
+                            requestLaunchApp(a);
+                            break;
+                        }
+                    }
+                    if (!installed) {
+                        Toast.makeText(MainActivity.this, app.getLabel() + " non è installata. Apri Aurora Store per scaricarla.", Toast.LENGTH_SHORT).show();
+                    }
                 }
             });
 
@@ -887,54 +1261,150 @@ public class MainActivity extends Activity {
                 }
             });
 
-            dockContainer.addView(card);
-        }
-
-        // Add "Tutte le App" Pill
-        View allAppsCard = inflater.inflate(R.layout.item_app_card, dockContainer, false);
-        TextView tvAll = allAppsCard.findViewById(R.id.app_name);
-        tvAll.setText(R.string.all_apps);
-        allAppsCard.setTag("__zenith_all_apps__");
-        setupPillFocus(allAppsCard);
-        allAppsCard.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                openDrawer();
-            }
-        });
-        dockContainer.addView(allAppsCard);
-
-        // Deterministic D-pad navigation
-        int childCount = dockContainer.getChildCount();
-        for (int i = 0; i < childCount; i++) {
-            View card = dockContainer.getChildAt(i);
             card.setId(View.generateViewId());
+            llFavoritesContainer.addView(card);
         }
 
-        for (int i = 0; i < childCount; i++) {
-            View card = dockContainer.getChildAt(i);
-            int leftId = (i > 0) ? dockContainer.getChildAt(i - 1).getId() : card.getId();
-            int rightId = (i < childCount - 1) ? dockContainer.getChildAt(i + 1).getId() : card.getId();
+        // Link favorite cards horizontal navigation
+        int count = llFavoritesContainer.getChildCount();
+        for (int i = 0; i < count; i++) {
+            View card = llFavoritesContainer.getChildAt(i);
+            int leftId = (i > 0) ? llFavoritesContainer.getChildAt(i - 1).getId() : card.getId();
+            int rightId = (i < count - 1) ? llFavoritesContainer.getChildAt(i + 1).getId() : card.getId();
 
             card.setNextFocusLeftId(leftId);
             card.setNextFocusRightId(rightId);
-            card.setNextFocusUpId(R.id.btn_settings);
-            card.setNextFocusDownId(card.getId());
-        }
-
-        if (childCount > 0) {
-            btnWifi.setNextFocusDownId(dockContainer.getChildAt(0).getId());
-            btnSettings.setNextFocusDownId(dockContainer.getChildAt(childCount - 1).getId());
-            dockContainer.getChildAt(0).requestFocus();
+            card.setNextFocusUpId(R.id.tab_home);
+            card.setNextFocusDownId(R.id.hsv_inputs);
         }
     }
 
-    private void setupPillFocus(final View card) {
+    private List<TvInputItem> getTvInputItems() {
+        List<TvInputItem> list = new ArrayList<>();
+        list.add(new TvInputItem(1,
+                prefs.getString("input_1_title", "Android TV"),
+                prefs.getString("input_1_sub", "HDMI 1 • Connesso"),
+                prefs.getString("input_1_icon", "hdmi"),
+                "content://android.media.tv/passthrough/com.mediatek.tis/.HdmiInputService/HW2",
+                243));
+
+        list.add(new TvInputItem(2,
+                prefs.getString("input_2_title", "Switch 2"),
+                prefs.getString("input_2_sub", "HDMI 2 • Connesso"),
+                prefs.getString("input_2_icon", "gamepad"),
+                "content://android.media.tv/passthrough/com.mediatek.tis/.HdmiInputService/HW3",
+                244));
+
+        list.add(new TvInputItem(3,
+                prefs.getString("input_3_title", "Series X"),
+                prefs.getString("input_3_sub", "HDMI 3 • Connesso"),
+                prefs.getString("input_3_icon", "gamepad"),
+                "content://android.media.tv/passthrough/com.mediatek.tis/.HdmiInputService/HW4",
+                245));
+
+        return list;
+    }
+
+    private int getInputIconRes(String iconType) {
+        if ("gamepad".equalsIgnoreCase(iconType)) return R.drawable.ic_gamepad;
+        if ("pc".equalsIgnoreCase(iconType)) return R.drawable.ic_pc;
+        if ("tv".equalsIgnoreCase(iconType)) return R.drawable.ic_tv;
+        return R.drawable.ic_hdmi;
+    }
+
+    private void buildInputs() {
+        llInputsContainer.removeAllViews();
+        LayoutInflater inflater = LayoutInflater.from(this);
+        final List<TvInputItem> inputs = getTvInputItems();
+
+        for (int i = 0; i < inputs.size(); i++) {
+            final TvInputItem item = inputs.get(i);
+            View card = inflater.inflate(R.layout.item_input_card, llInputsContainer, false);
+            ImageView ivIcon = card.findViewById(R.id.iv_input_icon);
+            TextView tvTitle = card.findViewById(R.id.tv_input_title);
+            TextView tvSubtitle = card.findViewById(R.id.tv_input_subtitle);
+
+            ivIcon.setImageResource(getInputIconRes(item.iconType));
+            tvTitle.setText(item.title);
+            tvSubtitle.setText(item.subtitle);
+
+            card.setTag(item);
+            setupCardScaleAnimation(card);
+
+            card.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    launchTvInput(item);
+                }
+            });
+
+            card.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    showRenameInputDialog(item);
+                    return true;
+                }
+            });
+
+            card.setId(View.generateViewId());
+            llInputsContainer.addView(card);
+        }
+
+        // Link input cards horizontal navigation
+        int count = llInputsContainer.getChildCount();
+        for (int i = 0; i < count; i++) {
+            View card = llInputsContainer.getChildAt(i);
+            int leftId = (i > 0) ? llInputsContainer.getChildAt(i - 1).getId() : card.getId();
+            int rightId = (i < count - 1) ? llInputsContainer.getChildAt(i + 1).getId() : card.getId();
+
+            card.setNextFocusLeftId(leftId);
+            card.setNextFocusRightId(rightId);
+            card.setNextFocusUpId(R.id.hsv_favorites);
+            card.setNextFocusDownId(card.getId());
+        }
+    }
+
+    private void launchTvInput(final TvInputItem item) {
+        if (item == null) return;
+        Toast.makeText(this, "Passaggio a " + item.title + "...", Toast.LENGTH_SHORT).show();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                boolean switched = false;
+                try {
+                    Process p = Runtime.getRuntime().exec(new String[]{"input", "keyevent", String.valueOf(item.keycode)});
+                    if (p.waitFor() == 0) {
+                        switched = true;
+                    }
+                } catch (Throwable ignored) {}
+
+                if (!switched) {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(item.passthroughUri));
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(intent);
+                        switched = true;
+                    } catch (Throwable ignored) {}
+                }
+
+                if (!switched) {
+                    try {
+                        Runtime.getRuntime().exec(new String[]{"input", "keyevent", "178"});
+                    } catch (Throwable ignored) {}
+                }
+            }
+        }).start();
+    }
+
+    private void setupCardScaleAnimation(final View card) {
         card.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
-            public void onFocusChange(View view, boolean hasFocus) {
+            public void onFocusChange(View v, boolean hasFocus) {
                 if (hasFocus) {
-                    hsvDock.smoothScrollTo(Math.max(0, view.getLeft() - 30), 0);
+                    v.animate().scaleX(1.05f).scaleY(1.05f).setDuration(150).start();
+                } else {
+                    v.animate().scaleX(1.0f).scaleY(1.0f).setDuration(150).start();
                 }
             }
         });
@@ -943,7 +1413,6 @@ public class MainActivity extends Activity {
     private void launchApp(AppInfo app) {
         if (app == null) return;
 
-        // Custom handling for Screensaver
         String pkg = app.getPackageName().toLowerCase();
         String lbl = app.getLabel().toLowerCase();
         if (pkg.contains("screensaver") || lbl.contains("salvaschermo")) {
@@ -951,7 +1420,7 @@ public class MainActivity extends Activity {
             return;
         }
 
-        // Special explicit launch handling for Prime Video on Fire OS
+        // Special Leanback launch intent for Prime Video
         if ("com.amazon.firebat".equals(app.getPackageName()) || "com.amazon.amazonvideo.livingroom".equals(app.getPackageName())) {
             try {
                 Intent intent = new Intent(Intent.ACTION_MAIN);
@@ -964,42 +1433,36 @@ public class MainActivity extends Activity {
             } catch (Exception ignored) {}
         }
 
-        // 1. Try explicit component with LEANBACK launcher
-        try {
-            Intent intent = new Intent(Intent.ACTION_MAIN);
-            intent.addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
-            intent.setComponent(new ComponentName(app.getPackageName(), app.getActivityName()));
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-            startActivity(intent);
-            overridePendingTransition(0, 0);
-            return;
-        } catch (Exception ignored) {}
-
-        // 2. Try explicit component with standard launcher
-        try {
-            Intent intent = new Intent(Intent.ACTION_MAIN);
-            intent.addCategory(Intent.CATEGORY_LAUNCHER);
-            intent.setComponent(new ComponentName(app.getPackageName(), app.getActivityName()));
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-            startActivity(intent);
-            overridePendingTransition(0, 0);
-            return;
-        } catch (Exception ignored) {}
-
-        // 3. Try getLeanbackLaunchIntentForPackage
-        try {
-            Intent intent = getPackageManager().getLeanbackLaunchIntentForPackage(app.getPackageName());
-            if (intent != null) {
+        // 1. Explicit Leanback launcher
+        if (app.getActivityName() != null && !app.getActivityName().isEmpty()) {
+            try {
+                Intent intent = new Intent(Intent.ACTION_MAIN);
+                intent.addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
+                intent.setComponent(new ComponentName(app.getPackageName(), app.getActivityName()));
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
                 startActivity(intent);
                 overridePendingTransition(0, 0);
                 return;
-            }
-        } catch (Exception ignored) {}
+            } catch (Exception ignored) {}
 
-        // 4. Try getLaunchIntentForPackage
+            try {
+                Intent intent = new Intent(Intent.ACTION_MAIN);
+                intent.addCategory(Intent.CATEGORY_LAUNCHER);
+                intent.setComponent(new ComponentName(app.getPackageName(), app.getActivityName()));
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                startActivity(intent);
+                overridePendingTransition(0, 0);
+                return;
+            } catch (Exception ignored) {}
+        }
+
+        // 2. PackageManager fallback
         try {
-            Intent intent = getPackageManager().getLaunchIntentForPackage(app.getPackageName());
+            PackageManager pm = getPackageManager();
+            Intent intent = pm.getLeanbackLaunchIntentForPackage(app.getPackageName());
+            if (intent == null) {
+                intent = pm.getLaunchIntentForPackage(app.getPackageName());
+            }
             if (intent != null) {
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
                 startActivity(intent);
@@ -1011,72 +1474,28 @@ public class MainActivity extends Activity {
         Toast.makeText(this, "Impossibile avviare " + app.getLabel(), Toast.LENGTH_SHORT).show();
     }
 
-    private void openDrawer() {
-        flDrawer.setVisibility(View.VISIBLE);
-        gvAllApps.requestFocus();
-        if (allAppsList.size() > 0) {
-            gvAllApps.setSelection(0);
-        }
-    }
-
-    private void closeDrawer() {
-        flDrawer.setVisibility(View.GONE);
-        if (dockContainer.getChildCount() > 0) {
-            dockContainer.getChildAt(0).requestFocus();
-        }
-    }
-
-    private void toggleFavorite(String pkg) {
-        if ("__zenith_all_apps__".equals(pkg)) return;
-
-        Set<String> cur = new LinkedHashSet<>(prefs.getStringSet(PREF_FAVORITES, new HashSet<String>()));
-        if (cur.contains(pkg)) {
-            cur.remove(pkg);
-            Toast.makeText(this, "Rimossa dalla Home", Toast.LENGTH_SHORT).show();
-        } else {
-            cur.add(pkg);
-            Toast.makeText(this, "Aggiunta alla Home!", Toast.LENGTH_SHORT).show();
-        }
-        prefs.edit().putStringSet(PREF_FAVORITES, cur).apply();
-        buildDock();
-        if (gridAdapter != null) {
-            gridAdapter.updateState(cur, getLockedPackagesSet());
-        }
-    }
-
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         resetIdleTimer();
 
-        // Handle physical number keys and back while PIN prompt is showing
+        // Physical numpad & back keys while PIN prompt is showing
         if (flPinOverlay != null && flPinOverlay.getVisibility() == View.VISIBLE) {
             int keyCode = event.getKeyCode();
             if (event.getAction() == KeyEvent.ACTION_DOWN) {
-                if (event.getRepeatCount() > 0) {
-                    return true;
-                }
-                int digit = -1;
+                if (event.getRepeatCount() > 0) return true;
+
                 if (keyCode >= KeyEvent.KEYCODE_0 && keyCode <= KeyEvent.KEYCODE_9) {
-                    digit = keyCode - KeyEvent.KEYCODE_0;
-                } else if (keyCode >= KeyEvent.KEYCODE_NUMPAD_0 && keyCode <= KeyEvent.KEYCODE_NUMPAD_9) {
-                    digit = keyCode - KeyEvent.KEYCODE_NUMPAD_0;
-                } else {
-                    char c = (char) event.getUnicodeChar();
-                    if (c >= '0' && c <= '9') {
-                        digit = c - '0';
-                    }
-                }
-
-                if (digit >= 0) {
-                    onDigitEntered(digit);
+                    onDigitEntered(keyCode - KeyEvent.KEYCODE_0);
                     return true;
                 }
-
+                if (keyCode >= KeyEvent.KEYCODE_NUMPAD_0 && keyCode <= KeyEvent.KEYCODE_NUMPAD_9) {
+                    onDigitEntered(keyCode - KeyEvent.KEYCODE_NUMPAD_0);
+                    return true;
+                }
                 if (keyCode == KeyEvent.KEYCODE_DEL) {
                     onDelPressed();
                     return true;
                 }
-
                 if (keyCode == KeyEvent.KEYCODE_BACK) {
                     hidePinPrompt();
                     return true;
@@ -1091,18 +1510,22 @@ public class MainActivity extends Activity {
             }
         }
 
-        // Handle Back key while Options prompt is showing
-        if (flOptionsOverlay != null && flOptionsOverlay.getVisibility() == View.VISIBLE) {
-            if (event.getAction() == KeyEvent.ACTION_UP && event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
+        // Back key dispatch
+        if (event.getAction() == KeyEvent.ACTION_UP && event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
+            if (flRenameOverlay != null && flRenameOverlay.getVisibility() == View.VISIBLE) {
+                hideRenameInputDialog();
+                return true;
+            }
+            if (flOptionsOverlay != null && flOptionsOverlay.getVisibility() == View.VISIBLE) {
                 hideAppOptions();
                 return true;
             }
-        }
-
-        // Handle Back key while Settings overlay is showing
-        if (flSettingsOverlay != null && flSettingsOverlay.getVisibility() == View.VISIBLE) {
-            if (event.getAction() == KeyEvent.ACTION_UP && event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
+            if (flSettingsOverlay != null && flSettingsOverlay.getVisibility() == View.VISIBLE) {
                 hideZenithSettings();
+                return true;
+            }
+            if (flDrawer != null && flDrawer.getVisibility() == View.VISIBLE) {
+                showHomeDashboard();
                 return true;
             }
         }
@@ -1116,36 +1539,34 @@ public class MainActivity extends Activity {
             event.startTracking();
         }
 
-        if (keyCode == KeyEvent.KEYCODE_BACK) {
-            if (flSettingsOverlay != null && flSettingsOverlay.getVisibility() == View.VISIBLE) {
-                hideZenithSettings();
-                return true;
+        if (keyCode == KeyEvent.KEYCODE_MENU) {
+            // Check focused input card
+            for (int i = 0; i < llInputsContainer.getChildCount(); i++) {
+                View child = llInputsContainer.getChildAt(i);
+                if (child.hasFocus() && child.getTag() instanceof TvInputItem) {
+                    showRenameInputDialog((TvInputItem) child.getTag());
+                    return true;
+                }
             }
-            if (flDrawer.getVisibility() == View.VISIBLE) {
-                closeDrawer();
-                return true;
+            // Check focused favorite card
+            for (int i = 0; i < llFavoritesContainer.getChildCount(); i++) {
+                View child = llFavoritesContainer.getChildAt(i);
+                if (child.hasFocus() && child.getTag() instanceof String) {
+                    String pkg = (String) child.getTag();
+                    for (AppInfo a : allAppsList) {
+                        if (a.getPackageName().equals(pkg)) {
+                            showAppOptions(a);
+                            return true;
+                        }
+                    }
+                }
             }
-        } else if (keyCode == KeyEvent.KEYCODE_MENU) {
+            // Check focused drawer app
             if (flDrawer.getVisibility() == View.VISIBLE) {
                 int pos = gvAllApps.getSelectedItemPosition();
                 if (pos != AdapterView.INVALID_POSITION && pos < allAppsList.size()) {
                     showAppOptions(allAppsList.get(pos));
                     return true;
-                }
-            } else {
-                for (int i = 0; i < dockContainer.getChildCount(); i++) {
-                    View child = dockContainer.getChildAt(i);
-                    if (child.hasFocus()) {
-                        Object tag = child.getTag();
-                        if (tag instanceof String && !"__zenith_all_apps__".equals(tag)) {
-                            for (AppInfo a : allAppsList) {
-                                if (a.getPackageName().equals(tag)) {
-                                    showAppOptions(a);
-                                    return true;
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -1155,26 +1576,33 @@ public class MainActivity extends Activity {
     @Override
     public boolean onKeyLongPress(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
+            // Check focused input card
+            for (int i = 0; i < llInputsContainer.getChildCount(); i++) {
+                View child = llInputsContainer.getChildAt(i);
+                if (child.hasFocus() && child.getTag() instanceof TvInputItem) {
+                    showRenameInputDialog((TvInputItem) child.getTag());
+                    return true;
+                }
+            }
+            // Check focused favorite card
+            for (int i = 0; i < llFavoritesContainer.getChildCount(); i++) {
+                View child = llFavoritesContainer.getChildAt(i);
+                if (child.hasFocus() && child.getTag() instanceof String) {
+                    String pkg = (String) child.getTag();
+                    for (AppInfo a : allAppsList) {
+                        if (a.getPackageName().equals(pkg)) {
+                            showAppOptions(a);
+                            return true;
+                        }
+                    }
+                }
+            }
+            // Check focused drawer app
             if (flDrawer.getVisibility() == View.VISIBLE) {
                 int pos = gvAllApps.getSelectedItemPosition();
                 if (pos != AdapterView.INVALID_POSITION && pos < allAppsList.size()) {
                     showAppOptions(allAppsList.get(pos));
                     return true;
-                }
-            } else {
-                for (int i = 0; i < dockContainer.getChildCount(); i++) {
-                    View child = dockContainer.getChildAt(i);
-                    if (child.hasFocus()) {
-                        Object tag = child.getTag();
-                        if (tag instanceof String && !"__zenith_all_apps__".equals(tag)) {
-                            for (AppInfo a : allAppsList) {
-                                if (a.getPackageName().equals(tag)) {
-                                    showAppOptions(a);
-                                    return true;
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }

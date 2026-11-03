@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#B3000000"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:layout_width="480dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:background="@drawable/dialog_background"
+        android:paddingStart="28dp"
+        android:paddingEnd="28dp"
+        android:paddingTop="26dp"
+        android:paddingBottom="26dp"
+        android:gravity="center_horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="✏️ Rinomina Ingresso"
+            android:textColor="#FFFFFFFF"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_rename_target"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="20dp"
+            android:text="Personalizza etichetta e icona dell'ingresso HDMI"
+            android:textColor="#A0FFFFFF"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="NOME DISPOSITIVO:"
+            android:textColor="#80FFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/et_input_title"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/input_field_bg"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:textColor="#FFFFFFFF"
+            android:textColorHint="#60FFFFFF"
+            android:hint="es. Switch 2, Series X, PC"
+            android:singleLine="true"
+            android:textSize="15sp"
+            android:focusable="true" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SOTTOTITOLO / DETTAGLI:"
+            android:textColor="#80FFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/et_input_subtitle"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/input_field_bg"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:textColor="#FFFFFFFF"
+            android:textColorHint="#60FFFFFF"
+            android:hint="es. HDMI 2 • Connesso"
+            android:singleLine="true"
+            android:textSize="14sp"
+            android:focusable="true" />
+
+        <!-- Icon Picker Row -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SCEGLI ICONA:"
+            android:textColor="#80FFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="24dp"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <Button
+                android:id="@+id/btn_icon_hdmi"
+                android:layout_width="0dp"
+                android:layout_height="42dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:text="🔌 HDMI"
+                android:textColor="@color/dialog_button_text_color"
+                android:textSize="12sp"
+                android:background="@drawable/dialog_button_selector"
+                android:focusable="true" />
+
+            <Button
+                android:id="@+id/btn_icon_gamepad"
+                android:layout_width="0dp"
+                android:layout_height="42dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:text="🎮 Console"
+                android:textColor="@color/dialog_button_text_color"
+                android:textSize="12sp"
+                android:background="@drawable/dialog_button_selector"
+                android:focusable="true" />
+
+            <Button
+                android:id="@+id/btn_icon_pc"
+                android:layout_width="0dp"
+                android:layout_height="42dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:text="🖥️ PC"
+                android:textColor="@color/dialog_button_text_color"
+                android:textSize="12sp"
+                android:background="@drawable/dialog_button_selector"
+                android:focusable="true" />
+
+            <Button
+                android:id="@+id/btn_icon_tv"
+                android:layout_width="0dp"
+                android:layout_height="42dp"
+                android:layout_weight="1"
+                android:text="📺 TV"
+                android:textColor="@color/dialog_button_text_color"
+                android:textSize="12sp"
+                android:background="@drawable/dialog_button_selector"
+                android:focusable="true" />
+
+        </LinearLayout>
+
+        <!-- Save / Cancel Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btn_save_input"
+                android:layout_width="0dp"
+                android:layout_height="46dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="12dp"
+                android:text="Salva Modifiche"
+                android:textColor="@color/dialog_button_text_color"
+                android:textStyle="bold"
+                android:background="@drawable/dialog_button_selector"
+                android:focusable="true" />
+
+            <Button
+                android:id="@+id/btn_cancel_input"
+                android:layout_width="0dp"
+                android:layout_height="46dp"
+                android:layout_weight="1"
+                android:text="Annulla"
+                android:textColor="@color/dialog_button_text_color"
+                android:background="@drawable/dialog_button_selector"
+                android:focusable="true" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>

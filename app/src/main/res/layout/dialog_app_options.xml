@@ -1,22 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/ll_options_root"
-    android:layout_width="380dp"
+    android:layout_width="400dp"
     android:layout_height="wrap_content"
+    android:layout_gravity="center"
     android:orientation="vertical"
-    android:background="@drawable/pill_bg_normal"
+    android:background="@drawable/dialog_background"
     android:paddingStart="28dp"
     android:paddingEnd="28dp"
-    android:paddingTop="24dp"
-    android:paddingBottom="24dp"
+    android:paddingTop="26dp"
+    android:paddingBottom="26dp"
     android:gravity="center_horizontal">
 
     <TextView
         android:id="@+id/tv_options_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="@color/text_primary"
-        android:textSize="20sp"
+        android:textColor="#FFFFFFFF"
+        android:textSize="22sp"
         android:textStyle="bold"
         android:gravity="center"
         android:singleLine="true" />
@@ -26,22 +27,22 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:layout_marginBottom="20dp"
-        android:textColor="@color/accent"
-        android:textSize="12sp"
+        android:layout_marginBottom="22dp"
+        android:textColor="#A0FFFFFF"
+        android:textSize="13sp"
         android:text="Gestione Applicazione" />
 
     <!-- Button 1: Toggle Favorite -->
     <TextView
         android:id="@+id/btn_opt_favorite"
         android:layout_width="match_parent"
-        android:layout_height="42dp"
-        android:background="@drawable/pill_background"
+        android:layout_height="46dp"
+        android:background="@drawable/dialog_button_selector"
         android:focusable="true"
         android:clickable="true"
         android:gravity="center"
-        android:text="⭐ Aggiungi a Home"
-        android:textColor="@color/text_primary"
+        android:text="⭐ Aggiungi a Preferiti"
+        android:textColor="@color/dialog_button_text_color"
         android:textSize="14sp"
         android:textStyle="bold" />
 
@@ -49,14 +50,14 @@
     <TextView
         android:id="@+id/btn_opt_lock"
         android:layout_width="match_parent"
-        android:layout_height="42dp"
+        android:layout_height="46dp"
         android:layout_marginTop="12dp"
-        android:background="@drawable/pill_background"
+        android:background="@drawable/dialog_button_selector"
         android:focusable="true"
         android:clickable="true"
         android:gravity="center"
         android:text="🔒 Blocca con PIN"
-        android:textColor="@color/text_primary"
+        android:textColor="@color/dialog_button_text_color"
         android:textSize="14sp"
         android:textStyle="bold" />
 
@@ -64,14 +65,14 @@
     <TextView
         android:id="@+id/btn_opt_change_pin"
         android:layout_width="match_parent"
-        android:layout_height="42dp"
+        android:layout_height="46dp"
         android:layout_marginTop="12dp"
-        android:background="@drawable/pill_background"
+        android:background="@drawable/dialog_button_selector"
         android:focusable="true"
         android:clickable="true"
         android:gravity="center"
         android:text="🔑 Modifica PIN Master"
-        android:textColor="@color/text_primary"
+        android:textColor="@color/dialog_button_text_color"
         android:textSize="14sp"
         android:textStyle="bold" />
 
@@ -79,14 +80,14 @@
     <TextView
         android:id="@+id/btn_opt_cancel"
         android:layout_width="match_parent"
-        android:layout_height="42dp"
+        android:layout_height="44dp"
         android:layout_marginTop="12dp"
-        android:background="@drawable/pill_background"
+        android:background="@drawable/dialog_button_selector"
         android:focusable="true"
         android:clickable="true"
         android:gravity="center"
         android:text="Chiudi"
-        android:textColor="#B0A0D0"
+        android:textColor="@color/dialog_button_text_color"
         android:textSize="13sp" />
 
 </LinearLayout>
