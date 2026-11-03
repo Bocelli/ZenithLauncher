@@ -414,4 +414,19 @@
 
     </FrameLayout>
 
+    <!-- Overlay: Weather City Dialog -->
+    <FrameLayout
+        android:id="@+id/fl_weather_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#B3000000"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="false"
+        android:defaultFocusHighlightEnabled="false">
+
+        <include layout="@layout/dialog_weather" />
+
+    </FrameLayout>
+
 </FrameLayout>

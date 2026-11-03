@@ -60,6 +60,21 @@
         android:textSize="14sp"
         android:textStyle="bold" />
 
+    <!-- Button: Weather City -->
+    <TextView
+        android:id="@+id/btn_set_weather_city"
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/dialog_button_selector"
+        android:focusable="true"
+        android:clickable="true"
+        android:gravity="center"
+        android:text="📍 Città Meteo: In caricamento..."
+        android:textColor="@color/dialog_button_text_color"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
     <!-- Button 3: Change PIN -->
     <TextView
         android:id="@+id/btn_set_change_pin"

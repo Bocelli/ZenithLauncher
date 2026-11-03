@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ll_weather_dialog_root"
+    android:layout_width="480dp"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:orientation="vertical"
+    android:background="@drawable/dialog_background"
+    android:paddingStart="28dp"
+    android:paddingEnd="28dp"
+    android:paddingTop="26dp"
+    android:paddingBottom="26dp"
+    android:gravity="center_horizontal"
+    android:defaultFocusHighlightEnabled="false">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="📍 Città Meteo"
+        android:textColor="#FFFFFFFF"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_weather_current_info"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="20dp"
+        android:text="Attuale: In rilevamento..."
+        android:textColor="#A0FFFFFF"
+        android:textSize="13sp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="DIGITA IL NOME DELLA CITTÀ:"
+        android:textColor="#80FFFFFF"
+        android:textSize="11sp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/et_weather_city"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/input_field_bg"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:textColor="#FFFFFFFF"
+        android:textColorHint="#60FFFFFF"
+        android:hint="es. Roma, Milano, Napoli, Udine..."
+        android:singleLine="true"
+        android:maxLines="1"
+        android:imeOptions="actionDone"
+        android:inputType="textCapWords"
+        android:textSize="15sp"
+        android:focusable="true"
+        android:clickable="true"
+        android:defaultFocusHighlightEnabled="false" />
+
+    <TextView
+        android:id="@+id/tv_weather_search_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="14dp"
+        android:gravity="center"
+        android:text=""
+        android:textColor="#FFBB33"
+        android:textSize="13sp"
+        android:visibility="gone" />
+
+    <!-- Button 1: Save City -->
+    <TextView
+        android:id="@+id/btn_weather_save"
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:background="@drawable/dialog_button_selector"
+        android:focusable="true"
+        android:clickable="true"
+        android:gravity="center"
+        android:text="🔍 Cerca e Salva Città"
+        android:textColor="@color/dialog_button_text_color"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:defaultFocusHighlightEnabled="false" />
+
+    <!-- Button 2: Reset to Auto IP -->
+    <TextView
+        android:id="@+id/btn_weather_auto"
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/dialog_button_selector"
+        android:focusable="true"
+        android:clickable="true"
+        android:gravity="center"
+        android:text="🌐 Rileva automaticamente da IP"
+        android:textColor="@color/dialog_button_text_color"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:defaultFocusHighlightEnabled="false" />
+
+    <!-- Button 3: Cancel -->
+    <TextView
+        android:id="@+id/btn_weather_cancel"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/dialog_button_selector"
+        android:focusable="true"
+        android:clickable="true"
+        android:gravity="center"
+        android:text="Annulla"
+        android:textColor="@color/dialog_button_text_color"
+        android:textSize="13sp"
+        android:defaultFocusHighlightEnabled="false" />
+
+</LinearLayout>

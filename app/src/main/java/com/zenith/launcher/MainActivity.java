@@ -91,9 +91,19 @@ public class MainActivity extends Activity {
     private FrameLayout flSettingsOverlay;
     private TextView btnSetScreensaverTimeout;
     private TextView btnSetScreensaverTest;
+    private TextView btnSetWeatherCity;
     private TextView btnSetChangePin;
     private TextView btnSetFireTv;
     private TextView btnSetClose;
+
+    // Weather City Dialog Overlay
+    private FrameLayout flWeatherOverlay;
+    private TextView tvWeatherCurrentInfo;
+    private EditText etWeatherCity;
+    private TextView tvWeatherSearchStatus;
+    private TextView btnWeatherSave;
+    private TextView btnWeatherAuto;
+    private TextView btnWeatherCancel;
 
     // Rename Input Overlay
     private FrameLayout flRenameOverlay;
@@ -543,6 +553,7 @@ public class MainActivity extends Activity {
         flSettingsOverlay = findViewById(R.id.fl_settings_overlay);
         btnSetScreensaverTimeout = findViewById(R.id.btn_set_screensaver_timeout);
         btnSetScreensaverTest = findViewById(R.id.btn_set_screensaver_test);
+        btnSetWeatherCity = findViewById(R.id.btn_set_weather_city);
         btnSetChangePin = findViewById(R.id.btn_set_change_pin);
         btnSetFireTv = findViewById(R.id.btn_set_firetv);
         btnSetClose = findViewById(R.id.btn_set_close);
@@ -561,6 +572,16 @@ public class MainActivity extends Activity {
                 startScreensaverActivity();
             }
         });
+
+        if (btnSetWeatherCity != null) {
+            btnSetWeatherCity.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    hideZenithSettings();
+                    showWeatherCityDialog();
+                }
+            });
+        }
 
         btnSetChangePin.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -584,6 +605,16 @@ public class MainActivity extends Activity {
                 hideZenithSettings();
             }
         });
+
+        // Weather Dialog Overlay
+        flWeatherOverlay = findViewById(R.id.fl_weather_overlay);
+        tvWeatherCurrentInfo = findViewById(R.id.tv_weather_current_info);
+        etWeatherCity = findViewById(R.id.et_weather_city);
+        tvWeatherSearchStatus = findViewById(R.id.tv_weather_search_status);
+        btnWeatherSave = findViewById(R.id.btn_weather_save);
+        btnWeatherAuto = findViewById(R.id.btn_weather_auto);
+        btnWeatherCancel = findViewById(R.id.btn_weather_cancel);
+        setupWeatherDialogListeners();
 
         // Rename Input Overlay
         flRenameOverlay = findViewById(R.id.fl_rename_overlay);
@@ -963,10 +994,19 @@ public class MainActivity extends Activity {
     }
 
     private void showZenithSettings() {
+        showZenithSettings(btnSetScreensaverTimeout);
+    }
+
+    private void showZenithSettings(View targetFocus) {
         updateScreensaverTimeoutLabel();
+        updateWeatherSettingsLabel();
         setOverlayModal(true);
         flSettingsOverlay.setVisibility(View.VISIBLE);
-        btnSetScreensaverTimeout.requestFocus();
+        if (targetFocus != null) {
+            targetFocus.requestFocus();
+        } else if (btnSetScreensaverTimeout != null) {
+            btnSetScreensaverTimeout.requestFocus();
+        }
     }
 
     private void hideZenithSettings() {
@@ -1009,6 +1049,142 @@ public class MainActivity extends Activity {
         updateScreensaverTimeoutLabel();
         resetIdleTimer();
         Toast.makeText(this, "Salvaschermo: " + TIMEOUT_LABELS[nextIndex], Toast.LENGTH_SHORT).show();
+    }
+
+    private void updateWeatherSettingsLabel() {
+        if (btnSetWeatherCity != null) {
+            btnSetWeatherCity.setText("📍 Città Meteo: " + WeatherHelper.getCurrentCityDisplay(this));
+        }
+    }
+
+    private void showWeatherCityDialog() {
+        if (flWeatherOverlay != null) {
+            setOverlayModal(true);
+            flWeatherOverlay.setVisibility(View.VISIBLE);
+            if (tvWeatherCurrentInfo != null) {
+                tvWeatherCurrentInfo.setText("Attuale: " + WeatherHelper.getCurrentCityDisplay(this));
+            }
+            if (tvWeatherSearchStatus != null) {
+                tvWeatherSearchStatus.setVisibility(View.GONE);
+                tvWeatherSearchStatus.setText("");
+            }
+            if (etWeatherCity != null) {
+                etWeatherCity.setText("");
+                etWeatherCity.requestFocus();
+            }
+        }
+    }
+
+    private void hideWeatherCityDialog() {
+        if (flWeatherOverlay != null && flWeatherOverlay.getVisibility() == View.VISIBLE) {
+            hideSoftKeyboard(etWeatherCity);
+            flWeatherOverlay.setVisibility(View.GONE);
+            setOverlayModal(false);
+        }
+    }
+
+    private void setupWeatherDialogListeners() {
+        if (etWeatherCity != null) {
+            etWeatherCity.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    showSoftKeyboard(etWeatherCity);
+                }
+            });
+            etWeatherCity.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+                @Override
+                public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                    if (actionId == EditorInfo.IME_ACTION_DONE) {
+                        saveManualWeatherCity();
+                        return true;
+                    }
+                    return false;
+                }
+            });
+        }
+
+        if (btnWeatherSave != null) {
+            btnWeatherSave.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    saveManualWeatherCity();
+                }
+            });
+        }
+
+        if (btnWeatherAuto != null) {
+            btnWeatherAuto.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    resetWeatherToAuto();
+                }
+            });
+        }
+
+        if (btnWeatherCancel != null) {
+            btnWeatherCancel.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    hideWeatherCityDialog();
+                    showZenithSettings(btnSetWeatherCity);
+                }
+            });
+        }
+    }
+
+    private void saveManualWeatherCity() {
+        if (etWeatherCity == null) return;
+        final String query = etWeatherCity.getText().toString().trim();
+        if (query.isEmpty()) {
+            if (tvWeatherSearchStatus != null) {
+                tvWeatherSearchStatus.setVisibility(View.VISIBLE);
+                tvWeatherSearchStatus.setText("Digita il nome di una città");
+            }
+            return;
+        }
+
+        hideSoftKeyboard(etWeatherCity);
+        if (tvWeatherSearchStatus != null) {
+            tvWeatherSearchStatus.setVisibility(View.VISIBLE);
+            tvWeatherSearchStatus.setText("Ricerca di '" + query + "' in corso...");
+        }
+
+        WeatherHelper.searchAndSetCity(this, query, new WeatherHelper.GeocodeCallback() {
+            @Override
+            public void onSuccess(final String foundCity, double lat, double lon) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(MainActivity.this, "Città impostata: " + foundCity, Toast.LENGTH_SHORT).show();
+                        hideWeatherCityDialog();
+                        loadWeather();
+                        showZenithSettings(btnSetWeatherCity);
+                    }
+                });
+            }
+
+            @Override
+            public void onError(final String message) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (tvWeatherSearchStatus != null) {
+                            tvWeatherSearchStatus.setVisibility(View.VISIBLE);
+                            tvWeatherSearchStatus.setText(message);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    private void resetWeatherToAuto() {
+        hideSoftKeyboard(etWeatherCity);
+        WeatherHelper.resetToAutoLocation(this);
+        Toast.makeText(this, "Rilevamento automatico meteo attivato", Toast.LENGTH_SHORT).show();
+        hideWeatherCityDialog();
+        loadWeather();
+        showZenithSettings(btnSetWeatherCity);
     }
 
     private void showPinPrompt(AppInfo targetApp, PinMode mode) {
@@ -1708,6 +1884,48 @@ public class MainActivity extends Activity {
             }
         }
 
+        // Weather dialog D-Pad control
+        if (flWeatherOverlay != null && flWeatherOverlay.getVisibility() == View.VISIBLE) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                int keyCode = event.getKeyCode();
+                if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                    if (etWeatherCity != null && etWeatherCity.hasFocus()) {
+                        if (btnWeatherSave != null) btnWeatherSave.requestFocus();
+                        return true;
+                    }
+                    if (btnWeatherSave != null && btnWeatherSave.hasFocus()) {
+                        if (btnWeatherAuto != null) btnWeatherAuto.requestFocus();
+                        return true;
+                    }
+                    if (btnWeatherAuto != null && btnWeatherAuto.hasFocus()) {
+                        if (btnWeatherCancel != null) btnWeatherCancel.requestFocus();
+                        return true;
+                    }
+                } else if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                    if (btnWeatherCancel != null && btnWeatherCancel.hasFocus()) {
+                        if (btnWeatherAuto != null) btnWeatherAuto.requestFocus();
+                        return true;
+                    }
+                    if (btnWeatherAuto != null && btnWeatherAuto.hasFocus()) {
+                        if (btnWeatherSave != null) btnWeatherSave.requestFocus();
+                        return true;
+                    }
+                    if (btnWeatherSave != null && btnWeatherSave.hasFocus()) {
+                        if (etWeatherCity != null) etWeatherCity.requestFocus();
+                        return true;
+                    }
+                    if (etWeatherCity != null && etWeatherCity.hasFocus()) {
+                        return true; // Keep inside dialog
+                    }
+                } else if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
+                    if (etWeatherCity != null && etWeatherCity.hasFocus()) {
+                        showSoftKeyboard(etWeatherCity);
+                        return true;
+                    }
+                }
+            }
+        }
+
         return super.dispatchKeyEvent(event);
     }
 
@@ -1738,6 +1956,11 @@ public class MainActivity extends Activity {
         }
         if (flRenameOverlay != null && flRenameOverlay.getVisibility() == View.VISIBLE) {
             hideRenameInputDialog();
+            return;
+        }
+        if (flWeatherOverlay != null && flWeatherOverlay.getVisibility() == View.VISIBLE) {
+            hideWeatherCityDialog();
+            showZenithSettings(btnSetWeatherCity);
             return;
         }
         if (flOptionsOverlay != null && flOptionsOverlay.getVisibility() == View.VISIBLE) {
