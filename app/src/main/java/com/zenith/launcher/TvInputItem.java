@@ -5,15 +5,13 @@ public class TvInputItem {
     public String title;
     public String subtitle;
     public String iconType; // "hdmi", "gamepad", "pc", "tv"
-    public String passthroughUri;
-    public int keycode;
+    public String inputId;
 
-    public TvInputItem(int id, String title, String subtitle, String iconType, String passthroughUri, int keycode) {
+    public TvInputItem(int id, String title, String subtitle, String iconType, String inputId) {
         this.id = id;
         this.title = title;
         this.subtitle = subtitle;
         this.iconType = iconType;
-        this.passthroughUri = passthroughUri;
-        this.keycode = keycode;
+        this.inputId = inputId;
     }
 }

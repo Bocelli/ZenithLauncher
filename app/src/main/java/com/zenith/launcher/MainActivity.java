@@ -1464,22 +1464,19 @@ public class MainActivity extends Activity {
                 prefs.getString("input_1_title", "Android TV"),
                 prefs.getString("input_1_sub", "HDMI 1 • Connesso"),
                 prefs.getString("input_1_icon", "hdmi"),
-                "content://android.media.tv/passthrough/com.mediatek.tis/.HdmiInputService/HW2",
-                243));
+                "com.mediatek.tis/.HdmiInputService/HW2"));
 
         list.add(new TvInputItem(2,
                 prefs.getString("input_2_title", "Switch 2"),
                 prefs.getString("input_2_sub", "HDMI 2 • Connesso"),
                 prefs.getString("input_2_icon", "gamepad"),
-                "content://android.media.tv/passthrough/com.mediatek.tis/.HdmiInputService/HW3",
-                244));
+                "com.mediatek.tis/.HdmiInputService/HW3"));
 
         list.add(new TvInputItem(3,
                 prefs.getString("input_3_title", "Series X"),
                 prefs.getString("input_3_sub", "HDMI 3 • Connesso"),
                 prefs.getString("input_3_icon", "gamepad"),
-                "content://android.media.tv/passthrough/com.mediatek.tis/.HdmiInputService/HW4",
-                245));
+                "com.mediatek.tis/.HdmiInputService/HW4"));
 
         return list;
     }
@@ -1545,35 +1542,12 @@ public class MainActivity extends Activity {
 
     private void launchTvInput(final TvInputItem item) {
         if (item == null) return;
-        Toast.makeText(this, "Passaggio a " + item.title + "...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Apertura " + item.title + "...", Toast.LENGTH_SHORT).show();
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                boolean switched = false;
-                try {
-                    Process p = Runtime.getRuntime().exec(new String[]{"input", "keyevent", String.valueOf(item.keycode)});
-                    if (p.waitFor() == 0) {
-                        switched = true;
-                    }
-                } catch (Throwable ignored) {}
-
-                if (!switched) {
-                    try {
-                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(item.passthroughUri));
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(intent);
-                        switched = true;
-                    } catch (Throwable ignored) {}
-                }
-
-                if (!switched) {
-                    try {
-                        Runtime.getRuntime().exec(new String[]{"input", "keyevent", "178"});
-                    } catch (Throwable ignored) {}
-                }
-            }
-        }).start();
+        Intent intent = new Intent(this, HdmiActivity.class);
+        intent.putExtra("input_id", item.inputId);
+        intent.putExtra("input_title", item.title);
+        startActivity(intent);
     }
 
     private void setupCardScaleAnimation(final View card) {

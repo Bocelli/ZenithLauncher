@@ -54,6 +54,13 @@
             android:theme="@style/Theme.Zenith"
             android:launchMode="singleTop" />
 
+        <activity
+            android:name=".HdmiActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            android:launchMode="singleTask"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize" />
+
         <service
             android:name=".ZenithScreensaverService"
             android:exported="true"
