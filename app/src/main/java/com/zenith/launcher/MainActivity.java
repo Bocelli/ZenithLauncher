@@ -33,6 +33,7 @@ import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextClock;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -1031,16 +1032,28 @@ public class MainActivity extends Activity {
         showZenithSettings(btnSetScreensaverTimeout);
     }
 
-    private void showZenithSettings(View targetFocus) {
+    private void showZenithSettings(final View targetFocus) {
         updateScreensaverTimeoutLabel();
         updateWeatherSettingsLabel();
         updateInputsVisibilityLabel();
         setOverlayModal(true);
         flSettingsOverlay.setVisibility(View.VISIBLE);
-        if (targetFocus != null) {
-            targetFocus.requestFocus();
-        } else if (btnSetScreensaverTimeout != null) {
-            btnSetScreensaverTimeout.requestFocus();
+        final View focusView = (targetFocus != null) ? targetFocus : btnSetScreensaverTimeout;
+        if (focusView != null) {
+            focusView.requestFocus();
+            final ScrollView sv = findViewById(R.id.sv_settings_scroll);
+            if (sv != null) {
+                sv.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (focusView == btnSetScreensaverTimeout) {
+                            sv.scrollTo(0, 0);
+                        } else {
+                            sv.requestChildFocus(focusView, focusView);
+                        }
+                    }
+                });
+            }
         }
     }
 

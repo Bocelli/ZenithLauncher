@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/ll_settings_root"
-    android:layout_width="440dp"
+    android:layout_width="460dp"
     android:layout_height="wrap_content"
     android:layout_gravity="center"
     android:orientation="vertical"
     android:background="@drawable/dialog_background"
-    android:paddingStart="28dp"
-    android:paddingEnd="28dp"
-    android:paddingTop="26dp"
-    android:paddingBottom="26dp"
+    android:paddingStart="26dp"
+    android:paddingEnd="26dp"
+    android:paddingTop="20dp"
+    android:paddingBottom="16dp"
     android:gravity="center_horizontal">
 
     <TextView
@@ -17,7 +17,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textColor="#FFFFFFFF"
-        android:textSize="22sp"
+        android:textSize="21sp"
         android:textStyle="bold"
         android:text="⚙️ Impostazioni Zenith" />
 
@@ -25,128 +25,149 @@
         android:id="@+id/tv_settings_subtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:layout_marginBottom="22dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="12dp"
         android:textColor="#A0FFFFFF"
-        android:textSize="13sp"
+        android:textSize="12sp"
         android:text="Personalizzazione &amp; Salvaschermo" />
 
-    <!-- Button 1: Screensaver Timeout Cycle -->
-    <TextView
-        android:id="@+id/btn_set_screensaver_timeout"
+    <ScrollView
+        android:id="@+id/sv_settings_scroll"
         android:layout_width="match_parent"
-        android:layout_height="46dp"
-        android:background="@drawable/dialog_button_selector"
-        android:focusable="true"
-        android:clickable="true"
-        android:gravity="center"
-        android:text="🌙 Salvaschermo: 3 minuti"
-        android:textColor="@color/dialog_button_text_color"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+        android:layout_height="360dp"
+        android:scrollbars="none"
+        android:overScrollMode="never"
+        android:fadingEdge="vertical"
+        android:requiresFadingEdge="vertical"
+        android:fadingEdgeLength="16dp"
+        android:clipToPadding="false">
 
-    <!-- Button 2: Test Screensaver Now -->
-    <TextView
-        android:id="@+id/btn_set_screensaver_test"
-        android:layout_width="match_parent"
-        android:layout_height="46dp"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/dialog_button_selector"
-        android:focusable="true"
-        android:clickable="true"
-        android:gravity="center"
-        android:text="▶ Prova Salvaschermo adesso"
-        android:textColor="@color/dialog_button_text_color"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="2dp"
+            android:paddingBottom="10dp">
 
-    <!-- Button: Weather City -->
-    <TextView
-        android:id="@+id/btn_set_weather_city"
-        android:layout_width="match_parent"
-        android:layout_height="46dp"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/dialog_button_selector"
-        android:focusable="true"
-        android:clickable="true"
-        android:gravity="center"
-        android:text="📍 Città Meteo: In caricamento..."
-        android:textColor="@color/dialog_button_text_color"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+            <!-- Button 1: Screensaver Timeout Cycle -->
+            <TextView
+                android:id="@+id/btn_set_screensaver_timeout"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:background="@drawable/dialog_button_selector"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="🌙 Salvaschermo: 3 minuti"
+                android:textColor="@color/dialog_button_text_color"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
-    <!-- Button: Inputs Visibility Toggle -->
-    <TextView
-        android:id="@+id/btn_set_inputs_visibility"
-        android:layout_width="match_parent"
-        android:layout_height="46dp"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/dialog_button_selector"
-        android:focusable="true"
-        android:clickable="true"
-        android:gravity="center"
-        android:text="📺 Sezione Ingressi: Visibile"
-        android:textColor="@color/dialog_button_text_color"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+            <!-- Button 2: Test Screensaver Now -->
+            <TextView
+                android:id="@+id/btn_set_screensaver_test"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/dialog_button_selector"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="▶ Prova Salvaschermo adesso"
+                android:textColor="@color/dialog_button_text_color"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
-    <!-- Button: Reset Inputs -->
-    <TextView
-        android:id="@+id/btn_set_inputs_reset"
-        android:layout_width="match_parent"
-        android:layout_height="46dp"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/dialog_button_selector"
-        android:focusable="true"
-        android:clickable="true"
-        android:gravity="center"
-        android:text="🔄 Ripristina Ingressi TCL (3 HDMI)"
-        android:textColor="@color/dialog_button_text_color"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+            <!-- Button 3: Weather City -->
+            <TextView
+                android:id="@+id/btn_set_weather_city"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/dialog_button_selector"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="📍 Città Meteo: In caricamento..."
+                android:textColor="@color/dialog_button_text_color"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
-    <!-- Button 3: Change PIN -->
-    <TextView
-        android:id="@+id/btn_set_change_pin"
-        android:layout_width="match_parent"
-        android:layout_height="46dp"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/dialog_button_selector"
-        android:focusable="true"
-        android:clickable="true"
-        android:gravity="center"
-        android:text="🔑 Modifica PIN Master"
-        android:textColor="@color/dialog_button_text_color"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+            <!-- Button 4: Inputs Visibility Toggle -->
+            <TextView
+                android:id="@+id/btn_set_inputs_visibility"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/dialog_button_selector"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="📺 Sezione Ingressi: Visibile"
+                android:textColor="@color/dialog_button_text_color"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
-    <!-- Button 4: Fire TV Settings -->
-    <TextView
-        android:id="@+id/btn_set_firetv"
-        android:layout_width="match_parent"
-        android:layout_height="46dp"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/dialog_button_selector"
-        android:focusable="true"
-        android:clickable="true"
-        android:gravity="center"
-        android:text="📺 Impostazioni Fire TV"
-        android:textColor="@color/dialog_button_text_color"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+            <!-- Button 5: Reset Inputs -->
+            <TextView
+                android:id="@+id/btn_set_inputs_reset"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/dialog_button_selector"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="🔄 Ripristina Ingressi TCL (3 HDMI)"
+                android:textColor="@color/dialog_button_text_color"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
-    <!-- Button 5: Close -->
-    <TextView
-        android:id="@+id/btn_set_close"
-        android:layout_width="match_parent"
-        android:layout_height="44dp"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/dialog_button_selector"
-        android:focusable="true"
-        android:clickable="true"
-        android:gravity="center"
-        android:text="Chiudi"
-        android:textColor="@color/dialog_button_text_color"
-        android:textSize="13sp" />
+            <!-- Button 6: Change PIN -->
+            <TextView
+                android:id="@+id/btn_set_change_pin"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/dialog_button_selector"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="🔑 Modifica PIN Master"
+                android:textColor="@color/dialog_button_text_color"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <!-- Button 7: Fire TV Settings -->
+            <TextView
+                android:id="@+id/btn_set_firetv"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/dialog_button_selector"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="📺 Impostazioni Fire TV"
+                android:textColor="@color/dialog_button_text_color"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <!-- Button 8: Close -->
+            <TextView
+                android:id="@+id/btn_set_close"
+                android:layout_width="match_parent"
+                android:layout_height="42dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/dialog_button_selector"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="Chiudi"
+                android:textColor="@color/dialog_button_text_color"
+                android:textSize="13sp" />
+
+        </LinearLayout>
+    </ScrollView>
 
 </LinearLayout>
